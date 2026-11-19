@@ -83,8 +83,10 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     let output_path = args
         .output
         .unwrap_or_else(|| args.input.with_extension("ass"));
-    let mut ass_options = AssOptions::default();
-    ass_options.highlight = args.highlight;
+    let ass_options = AssOptions {
+        highlight: args.highlight,
+        ..AssOptions::default()
+    };
     let ass = render_ass(&groups, &ass_options);
     fs::write(&output_path, ass)?;
 
