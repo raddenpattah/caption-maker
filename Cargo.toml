@@ -1,0 +1,3 @@
+[workspace]
+members = ["caption-core"]
+resolver = "2"
