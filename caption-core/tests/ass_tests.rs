@@ -1,4 +1,7 @@
-use caption_core::{group_words, render_ass, AssOptions, AssStyle, Group, Rgb, Word, WordsPerLine};
+use caption_core::{
+    group_words, merge_tokens_to_words, render_ass, AssOptions, AssStyle, Group, RawToken, Rgb,
+    Word, WordsPerLine,
+};
 
 fn words_with_times(times: &[(u32, u32, &str)]) -> Vec<Word> {
     times
@@ -150,4 +153,15 @@ fn groups_from_grouping_api_render_in_word_order() {
     let ass = render_ass(&groups, &options(false));
     assert!(ass.contains(",,satu dua\nDialogue:"));
     assert!(ass.contains(",,tiga\n"));
+}
+
+#[test]
+fn real_sample_fixture_matches_golden_ass() {
+    let tokens: Vec<RawToken> =
+        serde_json::from_str(include_str!("fixtures/tokens_id_sample.json"))
+            .expect("parse the captured Whisper token fixture");
+    let words = merge_tokens_to_words(&tokens);
+    let groups = group_words(&words, WordsPerLine::Two);
+    let ass = render_ass(&groups, &options(true));
+    assert_eq!(ass, include_str!("fixtures/expected.ass"));
 }

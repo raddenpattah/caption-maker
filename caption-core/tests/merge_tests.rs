@@ -109,3 +109,11 @@ fn overlapping_words_are_shifted_forward() {
 fn empty_input_returns_no_words() {
     assert!(merge_tokens_to_words(&[]).is_empty());
 }
+
+#[test]
+fn real_sample_fixture_merges_into_expected_word_count() {
+    let tokens: Vec<RawToken> =
+        serde_json::from_str(include_str!("fixtures/tokens_id_sample.json"))
+            .expect("parse the captured Whisper token fixture");
+    assert_eq!(merge_tokens_to_words(&tokens).len(), 48);
+}

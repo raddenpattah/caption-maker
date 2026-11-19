@@ -1,0 +1,738 @@
+[
+  {
+    "text": "[_BEG_]",
+    "t0_ms": 0,
+    "t1_ms": 0,
+    "id": 50364,
+    "p": 0.9863177,
+    "is_special": true
+  },
+  {
+    "text": " lagi",
+    "t0_ms": 120,
+    "t1_ms": 360,
+    "id": 17742,
+    "p": 0.6236981,
+    "is_special": false
+  },
+  {
+    "text": " car",
+    "t0_ms": 390,
+    "t1_ms": 660,
+    "id": 1032,
+    "p": 0.90209544,
+    "is_special": false
+  },
+  {
+    "text": "i",
+    "t0_ms": 660,
+    "t1_ms": 740,
+    "id": 72,
+    "p": 0.998302,
+    "is_special": false
+  },
+  {
+    "text": " k",
+    "t0_ms": 770,
+    "t1_ms": 840,
+    "id": 350,
+    "p": 0.355681,
+    "is_special": false
+  },
+  {
+    "text": "aut",
+    "t0_ms": 840,
+    "t1_ms": 1080,
+    "id": 1375,
+    "p": 0.26125896,
+    "is_special": false
+  },
+  {
+    "text": "ion",
+    "t0_ms": 1160,
+    "t1_ms": 1400,
+    "id": 313,
+    "p": 0.27088684,
+    "is_special": false
+  },
+  {
+    "text": " ring",
+    "t0_ms": 1400,
+    "t1_ms": 1780,
+    "id": 4875,
+    "p": 0.97360873,
+    "is_special": false
+  },
+  {
+    "text": "an",
+    "t0_ms": 1780,
+    "t1_ms": 1940,
+    "id": 282,
+    "p": 0.9990658,
+    "is_special": false
+  },
+  {
+    "text": " tapi",
+    "t0_ms": 2060,
+    "t1_ms": 2270,
+    "id": 23901,
+    "p": 0.8324469,
+    "is_special": false
+  },
+  {
+    "text": " bik",
+    "t0_ms": 2410,
+    "t1_ms": 2520,
+    "id": 26730,
+    "p": 0.89082247,
+    "is_special": false
+  },
+  {
+    "text": "in",
+    "t0_ms": 2520,
+    "t1_ms": 2550,
+    "id": 259,
+    "p": 0.998104,
+    "is_special": false
+  },
+  {
+    "text": " kul",
+    "t0_ms": 2680,
+    "t1_ms": 2830,
+    "id": 27576,
+    "p": 0.88087326,
+    "is_special": false
+  },
+  {
+    "text": "it",
+    "t0_ms": 3040,
+    "t1_ms": 3040,
+    "id": 270,
+    "p": 0.9840215,
+    "is_special": false
+  },
+  {
+    "text": " flawless",
+    "t0_ms": 3060,
+    "t1_ms": 3520,
+    "id": 45693,
+    "p": 0.7074897,
+    "is_special": false
+  },
+  {
+    "text": "[_TT_183]",
+    "t0_ms": 3660,
+    "t1_ms": 3660,
+    "id": 50547,
+    "p": 0.03953606,
+    "is_special": true
+  },
+  {
+    "text": " ini",
+    "t0_ms": 3770,
+    "t1_ms": 3960,
+    "id": 7408,
+    "p": 0.5193793,
+    "is_special": false
+  },
+  {
+    "text": " Lo",
+    "t0_ms": 3960,
+    "t1_ms": 4160,
+    "id": 6130,
+    "p": 0.2752372,
+    "is_special": false
+  },
+  {
+    "text": "ist",
+    "t0_ms": 4160,
+    "t1_ms": 4310,
+    "id": 468,
+    "p": 0.32702,
+    "is_special": false
+  },
+  {
+    "text": "ice",
+    "t0_ms": 4490,
+    "t1_ms": 4640,
+    "id": 573,
+    "p": 0.056882642,
+    "is_special": false
+  },
+  {
+    "text": " Ultimate",
+    "t0_ms": 4790,
+    "t1_ms": 5450,
+    "id": 26570,
+    "p": 0.60438615,
+    "is_special": false
+  },
+  {
+    "text": " DNA",
+    "t0_ms": 5540,
+    "t1_ms": 5830,
+    "id": 8272,
+    "p": 0.72904557,
+    "is_special": false
+  },
+  {
+    "text": " Air",
+    "t0_ms": 5830,
+    "t1_ms": 6130,
+    "id": 5774,
+    "p": 0.46409905,
+    "is_special": false
+  },
+  {
+    "text": " C",
+    "t0_ms": 6130,
+    "t1_ms": 6160,
+    "id": 383,
+    "p": 0.5814842,
+    "is_special": false
+  },
+  {
+    "text": "aut",
+    "t0_ms": 6330,
+    "t1_ms": 6500,
+    "id": 1375,
+    "p": 0.53465635,
+    "is_special": false
+  },
+  {
+    "text": "ion",
+    "t0_ms": 6590,
+    "t1_ms": 6840,
+    "id": 313,
+    "p": 0.98476124,
+    "is_special": false
+  },
+  {
+    "text": "[_TT_343]",
+    "t0_ms": 6860,
+    "t1_ms": 6860,
+    "id": 50707,
+    "p": 0.095450655,
+    "is_special": true
+  },
+  {
+    "text": " udah",
+    "t0_ms": 7040,
+    "t1_ms": 7480,
+    "id": 25231,
+    "p": 0.5667101,
+    "is_special": false
+  },
+  {
+    "text": " ada",
+    "t0_ms": 7480,
+    "t1_ms": 7950,
+    "id": 11063,
+    "p": 0.9916674,
+    "is_special": false
+  },
+  {
+    "text": " SP",
+    "t0_ms": 7950,
+    "t1_ms": 8260,
+    "id": 8420,
+    "p": 0.83355033,
+    "is_special": false
+  },
+  {
+    "text": "F",
+    "t0_ms": 8260,
+    "t1_ms": 8410,
+    "id": 37,
+    "p": 0.9983096,
+    "is_special": false
+  },
+  {
+    "text": " 30",
+    "t0_ms": 8410,
+    "t1_ms": 9350,
+    "id": 2217,
+    "p": 0.68176645,
+    "is_special": false
+  },
+  {
+    "text": " PA",
+    "t0_ms": 9350,
+    "t1_ms": 9650,
+    "id": 17718,
+    "p": 0.81446016,
+    "is_special": false
+  },
+  {
+    "text": "++",
+    "t0_ms": 9650,
+    "t1_ms": 9880,
+    "id": 25472,
+    "p": 0.95459443,
+    "is_special": false
+  },
+  {
+    "text": " dan",
+    "t0_ms": 10120,
+    "t1_ms": 10270,
+    "id": 3277,
+    "p": 0.7103699,
+    "is_special": false
+  },
+  {
+    "text": " past",
+    "t0_ms": 10270,
+    "t1_ms": 10560,
+    "id": 1791,
+    "p": 0.8966182,
+    "is_special": false
+  },
+  {
+    "text": "inya",
+    "t0_ms": 10720,
+    "t1_ms": 10990,
+    "id": 28507,
+    "p": 0.9968312,
+    "is_special": false
+  },
+  {
+    "text": " waterproof",
+    "t0_ms": 10990,
+    "t1_ms": 11830,
+    "id": 27974,
+    "p": 0.73418987,
+    "is_special": false
+  },
+  {
+    "text": "[_TT_595]",
+    "t0_ms": 11900,
+    "t1_ms": 11900,
+    "id": 50959,
+    "p": 0.104976594,
+    "is_special": true
+  },
+  {
+    "text": " jadi",
+    "t0_ms": 12040,
+    "t1_ms": 12170,
+    "id": 19399,
+    "p": 0.9728801,
+    "is_special": false
+  },
+  {
+    "text": " t",
+    "t0_ms": 12200,
+    "t1_ms": 12270,
+    "id": 256,
+    "p": 0.9162245,
+    "is_special": false
+  },
+  {
+    "text": "ahan",
+    "t0_ms": 12270,
+    "t1_ms": 12570,
+    "id": 21436,
+    "p": 0.99966055,
+    "is_special": false
+  },
+  {
+    "text": " se",
+    "t0_ms": 12570,
+    "t1_ms": 12720,
+    "id": 369,
+    "p": 0.8288378,
+    "is_special": false
+  },
+  {
+    "text": "har",
+    "t0_ms": 12720,
+    "t1_ms": 12930,
+    "id": 5854,
+    "p": 0.92228574,
+    "is_special": false
+  },
+  {
+    "text": "ian",
+    "t0_ms": 12940,
+    "t1_ms": 13160,
+    "id": 952,
+    "p": 0.99671334,
+    "is_special": false
+  },
+  {
+    "text": " tan",
+    "t0_ms": 13160,
+    "t1_ms": 13380,
+    "id": 7603,
+    "p": 0.99094886,
+    "is_special": false
+  },
+  {
+    "text": "pa",
+    "t0_ms": 13380,
+    "t1_ms": 13530,
+    "id": 4306,
+    "p": 0.8933484,
+    "is_special": false
+  },
+  {
+    "text": " tak",
+    "t0_ms": 13530,
+    "t1_ms": 13730,
+    "id": 991,
+    "p": 0.96608824,
+    "is_special": false
+  },
+  {
+    "text": "ut",
+    "t0_ms": 13840,
+    "t1_ms": 13890,
+    "id": 325,
+    "p": 0.5232372,
+    "is_special": false
+  },
+  {
+    "text": " l",
+    "t0_ms": 13920,
+    "t1_ms": 13970,
+    "id": 287,
+    "p": 0.6183584,
+    "is_special": false
+  },
+  {
+    "text": "unt",
+    "t0_ms": 13970,
+    "t1_ms": 14110,
+    "id": 2760,
+    "p": 0.8594828,
+    "is_special": false
+  },
+  {
+    "text": "ur",
+    "t0_ms": 14190,
+    "t1_ms": 14330,
+    "id": 374,
+    "p": 0.9873887,
+    "is_special": false
+  },
+  {
+    "text": "[_TT_720]",
+    "t0_ms": 14400,
+    "t1_ms": 14400,
+    "id": 51084,
+    "p": 0.15222381,
+    "is_special": true
+  },
+  {
+    "text": " sp",
+    "t0_ms": 14470,
+    "t1_ms": 14510,
+    "id": 637,
+    "p": 0.7888427,
+    "is_special": false
+  },
+  {
+    "text": "es",
+    "t0_ms": 14620,
+    "t1_ms": 14740,
+    "id": 279,
+    "p": 0.9978641,
+    "is_special": false
+  },
+  {
+    "text": "ial",
+    "t0_ms": 14860,
+    "t1_ms": 15000,
+    "id": 831,
+    "p": 0.9430556,
+    "is_special": false
+  },
+  {
+    "text": "nya",
+    "t0_ms": 15000,
+    "t1_ms": 15260,
+    "id": 7457,
+    "p": 0.9205142,
+    "is_special": false
+  },
+  {
+    "text": " lagi",
+    "t0_ms": 15260,
+    "t1_ms": 15590,
+    "id": 17742,
+    "p": 0.9938923,
+    "is_special": false
+  },
+  {
+    "text": ",",
+    "t0_ms": 15720,
+    "t1_ms": 15740,
+    "id": 11,
+    "p": 0.34199965,
+    "is_special": false
+  },
+  {
+    "text": " bel",
+    "t0_ms": 15740,
+    "t1_ms": 15890,
+    "id": 989,
+    "p": 0.9380836,
+    "is_special": false
+  },
+  {
+    "text": "i",
+    "t0_ms": 15890,
+    "t1_ms": 15910,
+    "id": 72,
+    "p": 0.99899155,
+    "is_special": false
+  },
+  {
+    "text": " sekarang",
+    "t0_ms": 16080,
+    "t1_ms": 16340,
+    "id": 29047,
+    "p": 0.99559045,
+    "is_special": false
+  },
+  {
+    "text": " lang",
+    "t0_ms": 16340,
+    "t1_ms": 16540,
+    "id": 2265,
+    "p": 0.96369666,
+    "is_special": false
+  },
+  {
+    "text": "sung",
+    "t0_ms": 16540,
+    "t1_ms": 16760,
+    "id": 32052,
+    "p": 0.9983934,
+    "is_special": false
+  },
+  {
+    "text": " dapat",
+    "t0_ms": 16760,
+    "t1_ms": 17130,
+    "id": 35161,
+    "p": 0.6410329,
+    "is_special": false
+  },
+  {
+    "text": " free",
+    "t0_ms": 17390,
+    "t1_ms": 17630,
+    "id": 1737,
+    "p": 0.40713087,
+    "is_special": false
+  },
+  {
+    "text": " refill",
+    "t0_ms": 17630,
+    "t1_ms": 18160,
+    "id": 42533,
+    "p": 0.8706805,
+    "is_special": false
+  },
+  {
+    "text": " k",
+    "t0_ms": 18160,
+    "t1_ms": 18200,
+    "id": 350,
+    "p": 0.64298785,
+    "is_special": false
+  },
+  {
+    "text": "aut",
+    "t0_ms": 18200,
+    "t1_ms": 18330,
+    "id": 1375,
+    "p": 0.9996224,
+    "is_special": false
+  },
+  {
+    "text": "ion",
+    "t0_ms": 18330,
+    "t1_ms": 18450,
+    "id": 313,
+    "p": 0.9794993,
+    "is_special": false
+  },
+  {
+    "text": " hem",
+    "t0_ms": 18610,
+    "t1_ms": 18700,
+    "id": 8636,
+    "p": 0.433867,
+    "is_special": false
+  },
+  {
+    "text": "at",
+    "t0_ms": 18700,
+    "t1_ms": 18780,
+    "id": 267,
+    "p": 0.99617165,
+    "is_special": false
+  },
+  {
+    "text": " banget",
+    "t0_ms": 18910,
+    "t1_ms": 19140,
+    "id": 24909,
+    "p": 0.99680364,
+    "is_special": false
+  },
+  {
+    "text": " kan",
+    "t0_ms": 19320,
+    "t1_ms": 19550,
+    "id": 4608,
+    "p": 0.94007176,
+    "is_special": false
+  },
+  {
+    "text": "[_TT_980]",
+    "t0_ms": 19600,
+    "t1_ms": 19600,
+    "id": 51344,
+    "p": 0.17275937,
+    "is_special": true
+  },
+  {
+    "text": " y",
+    "t0_ms": 19670,
+    "t1_ms": 19670,
+    "id": 288,
+    "p": 0.7023503,
+    "is_special": false
+  },
+  {
+    "text": "uk",
+    "t0_ms": 19700,
+    "t1_ms": 19810,
+    "id": 2034,
+    "p": 0.9963332,
+    "is_special": false
+  },
+  {
+    "text": " kl",
+    "t0_ms": 19940,
+    "t1_ms": 19970,
+    "id": 9671,
+    "p": 0.8229314,
+    "is_special": false
+  },
+  {
+    "text": "ik",
+    "t0_ms": 19970,
+    "t1_ms": 20070,
+    "id": 1035,
+    "p": 0.99862766,
+    "is_special": false
+  },
+  {
+    "text": " r",
+    "t0_ms": 20190,
+    "t1_ms": 20190,
+    "id": 367,
+    "p": 0.35565525,
+    "is_special": false
+  },
+  {
+    "text": "anya",
+    "t0_ms": 20190,
+    "t1_ms": 20500,
+    "id": 8791,
+    "p": 0.21371788,
+    "is_special": false
+  },
+  {
+    "text": " k",
+    "t0_ms": 20500,
+    "t1_ms": 20540,
+    "id": 350,
+    "p": 0.7962862,
+    "is_special": false
+  },
+  {
+    "text": "iri",
+    "t0_ms": 20630,
+    "t1_ms": 20780,
+    "id": 12988,
+    "p": 0.98836476,
+    "is_special": false
+  },
+  {
+    "text": " baw",
+    "t0_ms": 20870,
+    "t1_ms": 21030,
+    "id": 40463,
+    "p": 0.9577915,
+    "is_special": false
+  },
+  {
+    "text": "ah",
+    "t0_ms": 21030,
+    "t1_ms": 21080,
+    "id": 545,
+    "p": 0.99849814,
+    "is_special": false
+  },
+  {
+    "text": " sekarang",
+    "t0_ms": 21330,
+    "t1_ms": 21800,
+    "id": 29047,
+    "p": 0.87676233,
+    "is_special": false
+  },
+  {
+    "text": " sebel",
+    "t0_ms": 21800,
+    "t1_ms": 22180,
+    "id": 46122,
+    "p": 0.90672886,
+    "is_special": false
+  },
+  {
+    "text": "um",
+    "t0_ms": 22180,
+    "t1_ms": 22330,
+    "id": 449,
+    "p": 0.99960905,
+    "is_special": false
+  },
+  {
+    "text": " ke",
+    "t0_ms": 22330,
+    "t1_ms": 22430,
+    "id": 803,
+    "p": 0.8105633,
+    "is_special": false
+  },
+  {
+    "text": "hab",
+    "t0_ms": 22530,
+    "t1_ms": 22710,
+    "id": 7821,
+    "p": 0.97728604,
+    "is_special": false
+  },
+  {
+    "text": "isan",
+    "t0_ms": 22710,
+    "t1_ms": 22940,
+    "id": 14804,
+    "p": 0.98185605,
+    "is_special": false
+  },
+  {
+    "text": "[_TT_1155]",
+    "t0_ms": 23100,
+    "t1_ms": 23100,
+    "id": 51519,
+    "p": 0.16450422,
+    "is_special": true
+  }
+]
