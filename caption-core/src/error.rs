@@ -26,4 +26,8 @@ pub enum CaptionError {
     Whisper(#[from] whisper_rs::WhisperError),
     #[error("model path is not valid UTF-8: {0}")]
     InvalidModelPath(PathBuf),
+    #[error("thread count must be positive")]
+    InvalidThreadCount,
+    #[error("JSON error: {0}")]
+    Json(#[from] serde_json::Error),
 }

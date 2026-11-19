@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
 
@@ -56,7 +57,7 @@ pub struct TranscribeOptions {
     pub language: String,
     pub threads: i32,
     pub initial_prompt: Option<String>,
-    pub on_progress: Option<Box<dyn Fn(i32) + Send>>,
+    pub on_progress: Option<Arc<dyn Fn(i32) + Send + Sync>>,
 }
 
 impl TranscribeOptions {
