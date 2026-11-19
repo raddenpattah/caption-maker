@@ -2,3 +2,6 @@
 /models/*.bin
 /out.ass
 /tokens.json
+/out.ass
+/tokens.json
+/preview.*
