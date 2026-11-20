@@ -2,7 +2,7 @@ use crate::model::{RawToken, Word};
 
 #[derive(Default)]
 struct PendingWord {
-    text: String,
+    bytes: Vec<u8>,
     start_ms: Option<i64>,
     end_ms: Option<i64>,
 }
@@ -13,7 +13,12 @@ pub fn merge_tokens_to_words(tokens: &[RawToken]) -> Vec<Word> {
 
     for token in tokens.iter().filter(|token| !token.is_special) {
         let starts_word = token.text.chars().next().is_some_and(char::is_whitespace);
-        let fragment = token.text.trim();
+        let bytes = if token.bytes.is_empty() {
+            token.text.as_bytes()
+        } else {
+            &token.bytes
+        };
+        let fragment = trim_ascii_whitespace(bytes);
         if fragment.is_empty() {
             continue;
         }
@@ -28,7 +33,7 @@ pub fn merge_tokens_to_words(tokens: &[RawToken]) -> Vec<Word> {
         }
 
         let word = current.as_mut().expect("current word was initialized");
-        word.text.push_str(fragment);
+        word.bytes.extend_from_slice(fragment);
         if word.start_ms.is_none() && token.t0_ms >= 0 {
             word.start_ms = Some(token.t0_ms);
         }
@@ -64,7 +69,7 @@ fn repair_timings(pending: Vec<PendingWord>) -> Vec<Word> {
         let end = end.max(start.saturating_add(10));
 
         words.push(Word {
-            text: word.text.clone(),
+            text: String::from_utf8_lossy(&word.bytes).into_owned(),
             start_ms: to_u32(start),
             end_ms: to_u32(end),
         });
@@ -72,6 +77,18 @@ fn repair_timings(pending: Vec<PendingWord>) -> Vec<Word> {
     }
 
     words
+}
+
+fn trim_ascii_whitespace(bytes: &[u8]) -> &[u8] {
+    let start = bytes
+        .iter()
+        .position(|byte| !byte.is_ascii_whitespace())
+        .unwrap_or(bytes.len());
+    let end = bytes
+        .iter()
+        .rposition(|byte| !byte.is_ascii_whitespace())
+        .map_or(start, |index| index + 1);
+    &bytes[start..end]
 }
 
 fn to_u32(value: i64) -> u32 {

@@ -3,12 +3,42 @@ use caption_core::{merge_tokens_to_words, RawToken, Word};
 fn token(text: &str, t0_ms: i64, t1_ms: i64, is_special: bool) -> RawToken {
     RawToken {
         text: text.to_owned(),
+        bytes: Vec::new(),
         t0_ms,
         t1_ms,
         id: 1,
         p: 0.9,
         is_special,
     }
+}
+
+#[test]
+fn split_utf8_bytes_are_decoded_after_merging() {
+    let tokens = [
+        RawToken {
+            text: String::from_utf8_lossy(&[0xC3]).into_owned(),
+            bytes: vec![0xC3],
+            t0_ms: 100,
+            t1_ms: 120,
+            id: 1,
+            p: 0.9,
+            is_special: false,
+        },
+        RawToken {
+            text: String::from_utf8_lossy(&[0xA9]).into_owned(),
+            bytes: vec![0xA9],
+            t0_ms: 120,
+            t1_ms: 150,
+            id: 2,
+            p: 0.9,
+            is_special: false,
+        },
+    ];
+
+    let words = merge_tokens_to_words(&tokens);
+    assert_eq!(words.len(), 1);
+    assert_eq!(words[0].text, "é");
+    assert!(!words[0].text.contains('\u{FFFD}'));
 }
 
 #[test]

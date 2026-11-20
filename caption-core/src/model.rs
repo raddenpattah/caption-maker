@@ -31,6 +31,8 @@ impl Group {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RawToken {
     pub text: String,
+    #[serde(default)]
+    pub bytes: Vec<u8>,
     pub t0_ms: i64,
     pub t1_ms: i64,
     pub id: i32,

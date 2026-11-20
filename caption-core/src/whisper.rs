@@ -43,6 +43,7 @@ pub fn transcribe(
             let data = state.full_get_token_data(segment_index, token_index)?;
             tokens.push(RawToken {
                 text: String::from_utf8_lossy(&bytes).into_owned(),
+                bytes,
                 t0_ms: data.t0.saturating_mul(10),
                 t1_ms: data.t1.saturating_mul(10),
                 id: data.id,
