@@ -32,12 +32,17 @@ cargo run --release -- \
   --model models/ggml-small.bin \
   --words 2 \
   --highlight \
+  --prompt "Nama merek dan istilah khusus" \
+  --threads 4 \
   -o out.ass \
   --dump-tokens tokens.json
 ```
 
 The CLI also accepts `--ffmpeg <path>` to select a non-default FFmpeg
-executable. The model file is not tracked by Git.
+executable, `--prompt <teks>` to provide Whisper's initial prompt, and
+`--threads <n>` to set the transcription thread count. By default, the thread
+count is the available CPU parallelism capped at 8. The model file is not
+tracked by Git.
 
 ## Roadmap
 
