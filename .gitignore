@@ -6,3 +6,5 @@
 /tokens.json
 /preview.*
 /out/
+/src-tauri/target/
+/src-tauri/gen/
