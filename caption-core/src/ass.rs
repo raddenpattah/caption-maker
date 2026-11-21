@@ -125,3 +125,104 @@ fn format_float(value: f32) -> String {
         .trim_end_matches('.')
         .to_owned()
 }
+
+/// Hasil validasi ASS. Kumpulan masalah yang ditemukan; kosong = valid.
+#[derive(Debug, Default)]
+pub struct AssValidation {
+    pub errors: Vec<String>,
+}
+
+impl AssValidation {
+    pub fn is_valid(&self) -> bool {
+        self.errors.is_empty()
+    }
+}
+
+/// Validasi struktural file ASS hasil `render_ass`/`write_ass`.
+/// Bukan pengganti verifikasi visual: hanya menangkap kesalahan umum
+/// (header hilang, jumlah field Dialogue salah, timestamp tidak valid, Start >= End).
+pub fn validate_ass(input: &str) -> AssValidation {
+    let mut v = AssValidation::default();
+    let mut has_script_info = false;
+    let mut has_styles = false;
+    let mut has_events = false;
+    let mut has_style_default = false;
+
+    for (lineno, line) in input.lines().enumerate() {
+        let n = lineno + 1;
+        if line == "[Script Info]" {
+            has_script_info = true;
+        } else if line == "[V4+ Styles]" {
+            has_styles = true;
+        } else if line == "[Events]" {
+            has_events = true;
+        } else if let Some(rest) = line.strip_prefix("Dialogue: ") {
+            validate_dialogue(n, rest, &mut v);
+        } else if line.starts_with("Style: Default,") {
+            has_style_default = true;
+            if line.split(',').count() < 10 {
+                v.errors
+                    .push(format!("baris {n}: Style Default field kurang dari 10"));
+            }
+        } else if line.starts_with("PlayResX:") || line.starts_with("PlayResY:") {
+            let val = line.split(':').nth(1).unwrap_or("").trim();
+            if val.parse::<u32>().map(|x| x == 0).unwrap_or(true) {
+                v.errors.push(format!("baris {n}: {line} bukan angka > 0"));
+            }
+        }
+    }
+
+    if !has_script_info {
+        v.errors.push("bagian [Script Info] tidak ditemukan".into());
+    }
+    if !has_styles {
+        v.errors.push("bagian [V4+ Styles] tidak ditemukan".into());
+    }
+    if !has_events {
+        v.errors.push("bagian [Events] tidak ditemukan".into());
+    }
+    if has_styles && !has_style_default {
+        v.errors.push("Style Default tidak ditemukan".into());
+    }
+    v
+}
+
+fn validate_dialogue(lineno: usize, rest: &str, v: &mut AssValidation) {
+    // Format: Layer,Start,End,Style,Name,MarginL,MarginR,MarginV,Effect,Text
+    // Text boleh mengandung koma, jadi split dengan limit 10.
+    let parts: Vec<&str> = rest.splitn(10, ',').collect();
+    if parts.len() != 10 {
+        v.errors.push(format!(
+            "baris {lineno}: Dialogue punya {} field (harus 10)",
+            parts.len()
+        ));
+        return;
+    }
+    let start = parts[1].trim();
+    let end = parts[2].trim();
+    let (Ok(s), Ok(e)) = (parse_ass_time(start), parse_ass_time(end)) else {
+        v.errors.push(format!(
+            "baris {lineno}: timestamp tidak valid ({start} / {end})"
+        ));
+        return;
+    };
+    if s >= e {
+        v.errors
+            .push(format!("baris {lineno}: Start >= End ({start} / {end})"));
+    }
+}
+
+/// Parse `H:MM:SS.cc` jadi centidetik total.
+fn parse_ass_time(s: &str) -> Result<u64, ()> {
+    let mut it = s.split(':');
+    let h: u64 = it.next().ok_or(())?.parse().map_err(|_| ())?;
+    let m: u64 = it.next().ok_or(())?.parse().map_err(|_| ())?;
+    let sec_part = it.next().ok_or(())?;
+    let (sec, cs) = sec_part.split_once('.').ok_or(())?;
+    let sec: u64 = sec.parse().map_err(|_| ())?;
+    let cs: u64 = cs.parse().map_err(|_| ())?;
+    if m > 59 || sec > 59 || cs > 99 {
+        return Err(());
+    }
+    Ok(h * 360_000 + m * 6_000 + sec * 100 + cs)
+}
