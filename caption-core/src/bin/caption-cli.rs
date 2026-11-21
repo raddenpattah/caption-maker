@@ -32,6 +32,8 @@ struct Args {
     prompt: Option<String>,
     #[arg(long)]
     threads: Option<i32>,
+    #[arg(long, value_enum, default_value_t = FormatArg::Ass)]
+    format: FormatArg,
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -50,6 +52,32 @@ impl From<WordsArg> for WordsPerLine {
             WordsArg::One => Self::One,
             WordsArg::Two => Self::Two,
             WordsArg::Three => Self::Three,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum FormatArg {
+    #[value(name = "ass")]
+    Ass,
+    #[value(name = "srt")]
+    Srt,
+    #[value(name = "vtt")]
+    Vtt,
+    #[value(name = "txt")]
+    Txt,
+    #[value(name = "json")]
+    Json,
+}
+
+impl From<FormatArg> for caption_core::Format {
+    fn from(value: FormatArg) -> Self {
+        match value {
+            FormatArg::Ass => Self::Ass,
+            FormatArg::Srt => Self::Srt,
+            FormatArg::Vtt => Self::Vtt,
+            FormatArg::Txt => Self::Txt,
+            FormatArg::Json => Self::Json,
         }
     }
 }
@@ -100,15 +128,40 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let groups = group_words(&words, args.words.into());
+    let default_ext = match args.format {
+        FormatArg::Ass => "ass",
+        FormatArg::Srt => "srt",
+        FormatArg::Vtt => "vtt",
+        FormatArg::Txt => "txt",
+        FormatArg::Json => "json",
+    };
     let output_path = args
         .output
-        .unwrap_or_else(|| args.input.with_extension("ass"));
-    let ass_options = AssOptions {
-        highlight: args.highlight,
-        ..AssOptions::default()
-    };
-    let ass = render_ass(&groups, &ass_options);
-    fs::write(&output_path, ass)?;
+        .unwrap_or_else(|| args.input.with_extension(default_ext));
+
+    match caption_core::Format::from(args.format) {
+        caption_core::Format::Ass => {
+            let ass_options = AssOptions {
+                highlight: args.highlight,
+                ..AssOptions::default()
+            };
+            let ass = render_ass(&groups, &ass_options);
+            fs::write(&output_path, ass)?;
+        }
+        caption_core::Format::Srt => {
+            fs::write(&output_path, caption_core::to_srt(&groups))?;
+        }
+        caption_core::Format::Vtt => {
+            fs::write(&output_path, caption_core::to_vtt(&groups))?;
+        }
+        caption_core::Format::Txt => {
+            fs::write(&output_path, caption_core::to_txt(&groups))?;
+        }
+        caption_core::Format::Json => {
+            let json = caption_core::to_json(&groups)?;
+            fs::write(&output_path, json)?;
+        }
+    }
 
     println!(
         "tokens={} words={} groups={} output={}",
