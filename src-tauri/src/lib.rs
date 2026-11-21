@@ -14,6 +14,7 @@ pub fn run() {
             commands::validate_size_cmd,
             commands::list_presets,
             commands::render_ass_from_words,
+            commands::transcribe,
         ])
         .run(tauri::generate_context!())
         .expect("gagal menjalankan Tauri");

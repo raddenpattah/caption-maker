@@ -183,3 +183,86 @@ pub async fn list_presets() -> Result<Vec<PresetSummary>, String> {
 pub async fn render_ass_from_words(req: RenderRequest) -> Result<RenderResult, String> {
     render_ass_impl(&req)
 }
+
+// ---------- Command transcribe (butuh feature `whisper`) ----------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TranscribeRequest {
+    pub input: Option<String>,
+    pub model: Option<String>,
+    pub language: Option<String>,
+    pub threads: Option<i32>,
+    pub prompt: Option<String>,
+    pub words_per_line: Option<u8>,
+}
+
+#[cfg(feature = "whisper")]
+#[tauri::command]
+pub async fn transcribe(
+    app: tauri::AppHandle,
+    request: TranscribeRequest,
+) -> Result<Vec<WordDto>, String> {
+    use tauri::Emitter;
+
+    let input = request.input.ok_or("input wajib")?;
+    let model = request.model.ok_or("model wajib")?;
+    let input_path = std::path::PathBuf::from(&input);
+    let model_path = std::path::PathBuf::from(&model);
+
+    // 1. Ekstrak audio ke temp WAV
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    let tmp_wav =
+        std::env::temp_dir().join(format!("caption-{}-{}.wav", std::process::id(), nonce));
+
+    let _ = app.emit(
+        "transcribe_progress",
+        serde_json::json!({ "stage": "Mengekstrak audio", "progress": 0 }),
+    );
+    caption_core::extract_audio(std::path::Path::new("ffmpeg"), &input_path, &tmp_wav)
+        .map_err(|e| format!("ekstrak audio: {e}"))?;
+    let _ = app.emit(
+        "transcribe_progress",
+        serde_json::json!({ "stage": "Mengekstrak audio", "progress": 100 }),
+    );
+
+    // 2. Muat WAV
+    let samples =
+        caption_core::load_wav_16k_mono(&tmp_wav).map_err(|e| format!("muat wav: {e}"))?;
+    let _ = std::fs::remove_file(&tmp_wav);
+
+    // 3. Transkripsi
+    let mut opts = caption_core::TranscribeOptions::new(model_path);
+    if let Some(lang) = request.language {
+        opts.language = lang;
+    }
+    if let Some(t) = request.threads {
+        opts.threads = t;
+    }
+    opts.initial_prompt = request.prompt;
+    let _ = app.emit(
+        "transcribe_progress",
+        serde_json::json!({ "stage": "Transkripsi", "progress": 0 }),
+    );
+    let tokens =
+        caption_core::transcribe(&samples, &opts).map_err(|e| format!("transkripsi: {e}"))?;
+    let _ = app.emit(
+        "transcribe_progress",
+        serde_json::json!({ "stage": "Transkripsi", "progress": 100 }),
+    );
+
+    // 4. Merge token ke words
+    let words = caption_core::merge_tokens_to_words(&tokens);
+    Ok(words.iter().map(WordDto::from).collect())
+}
+
+#[cfg(not(feature = "whisper"))]
+#[tauri::command]
+pub async fn transcribe(
+    _app: tauri::AppHandle,
+    _request: TranscribeRequest,
+) -> Result<Vec<WordDto>, String> {
+    Err("fitur whisper tidak aktif; kompilasi dengan --features whisper".into())
+}
