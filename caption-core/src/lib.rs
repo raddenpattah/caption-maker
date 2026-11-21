@@ -6,6 +6,7 @@ mod group;
 mod merge;
 pub mod model;
 pub mod preset;
+pub mod preset_render;
 #[cfg(feature = "whisper")]
 mod whisper;
 
@@ -22,5 +23,6 @@ pub use preset::{
     builtin_presets, find_preset, validate_preset, Emphasis, PresetBox, PresetCategory,
     PresetColors, PresetFont, PresetGlow, StylePreset,
 };
+pub use preset_render::{ass_color_from_hex, render_ass_with_preset, PresetOptions, VideoGeometry};
 #[cfg(feature = "whisper")]
 pub use whisper::transcribe;
