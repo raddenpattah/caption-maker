@@ -271,13 +271,45 @@ fn render_frame(
         .as_ref()
         .ok_or("render-frame path wajib")?;
     let at_ms = args.at_ms.ok_or("--at-ms wajib dengan --render-frame")?;
-    let _ = groups_for_frame;
-    let _ = geometry;
-    let _ = preset;
-    let _ = at_ms;
-    let _ = out;
-    // NOT IMPLEMENTED di Tugas 4 (butuh ffmpeg color + ass filter + -ss)
-    Err("--render-frame belum diimplementasi (Tugas 5)".into())
+    let ass = render_ass_with_preset(
+        groups_for_frame,
+        preset,
+        geometry,
+        &PresetOptions::default(),
+    );
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_nanos();
+    let work = std::env::temp_dir().join(format!("caption-frame-{}-{nonce}", process::id()));
+    setup_work_dir(&work, &ass)?;
+    let secs = at_ms as f64 / 1000.0;
+    let color = format!("color=c=0x202020:s={}x{}", geometry.width, geometry.height);
+    let status = Command::new(&args.ffmpeg)
+        .current_dir(&work)
+        .args([
+            "-y",
+            "-f",
+            "lavfi",
+            "-i",
+            &color,
+            "-vf",
+            "ass=sub.ass:fontsdir=fonts",
+            "-frames:v",
+            "1",
+            "-ss",
+            &secs.to_string(),
+            out.to_str().ok_or("render-frame path bukan UTF-8")?,
+        ])
+        .stdout(Stdio::null())
+        .stderr(Stdio::inherit())
+        .status()?;
+    let _ = fs::remove_dir_all(&work);
+    if !status.success() {
+        return Err(format!("ffmpeg render-frame gagal: {status}").into());
+    }
+    println!("frame output={}", out.display());
+    Ok(())
 }
 
 fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
