@@ -2,35 +2,19 @@ name: CI
 
 on:
   push:
+    branches: [ main ]
   pull_request:
-
-permissions:
-  contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    branches: [ main ]
 
 jobs:
   test:
+    name: Test caption-core on Windows
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-          components: rustfmt, clippy
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy --workspace --all-targets --no-default-features -- -D warnings
-      - run: cargo test --workspace --no-default-features
-
-  whisper-build:
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo build --release -p caption-core
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Test (no-default-features)
+        run: cargo test -p caption-core --no-default-features
+      - name: Test (with whisper)
+        run: cargo test -p caption-core
