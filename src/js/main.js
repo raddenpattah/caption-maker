@@ -1,0 +1,1 @@
+// Antarmuka statis Caption Maker.
