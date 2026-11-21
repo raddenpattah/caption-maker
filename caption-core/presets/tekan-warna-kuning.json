@@ -1,0 +1,11 @@
+{
+  "id": "tekan-warna-kuning",
+  "name": "Tekan Warna Kuning",
+  "category": "penekanan_kata",
+  "font": { "family": "Poppins ExtraBold", "file": "Poppins-ExtraBold.ttf", "size": 78, "bold": false, "italic": false, "uppercase": true, "letter_spacing": 1 },
+  "colors": { "text": "#FFFFFF", "highlight": "#FFE14D", "outline": "#000000", "shadow": "#00000080" },
+  "outline": 7, "shadow": 4, "blur": 0,
+  "box": null, "glow": null,
+  "emphasis": "color_active", "emphasis_scale": null,
+  "words_per_line": 2, "alignment": 2, "margin_v": 450, "margin_lr": 80
+}

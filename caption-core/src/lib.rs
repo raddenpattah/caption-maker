@@ -5,6 +5,7 @@ pub mod exporter;
 mod group;
 mod merge;
 pub mod model;
+pub mod preset;
 #[cfg(feature = "whisper")]
 mod whisper;
 
@@ -16,6 +17,10 @@ pub use group::group_words;
 pub use merge::merge_tokens_to_words;
 pub use model::{
     AssOptions, AssStyle, Group, RawToken, Rgb, TranscribeOptions, Word, WordsPerLine,
+};
+pub use preset::{
+    builtin_presets, find_preset, validate_preset, Emphasis, PresetBox, PresetCategory,
+    PresetColors, PresetFont, PresetGlow, StylePreset,
 };
 #[cfg(feature = "whisper")]
 pub use whisper::transcribe;

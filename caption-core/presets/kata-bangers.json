@@ -1,0 +1,31 @@
+{
+  "id": "kata-bangers",
+  "name": "Kata Bangers",
+  "category": "kata_per_kata",
+  "font": {
+    "family": "Bangers",
+    "file": "Bangers-Regular.ttf",
+    "size": 100,
+    "bold": false,
+    "italic": false,
+    "uppercase": true,
+    "letter_spacing": 1
+  },
+  "colors": {
+    "text": "#FF9F1C",
+    "highlight": "#FFFFFF",
+    "outline": "#1A1A1A",
+    "shadow": "#00000080"
+  },
+  "outline": 7,
+  "shadow": 4,
+  "blur": 0,
+  "box": null,
+  "glow": null,
+  "emphasis": "none",
+  "emphasis_scale": null,
+  "words_per_line": 1,
+  "alignment": 2,
+  "margin_v": 450,
+  "margin_lr": 80
+}

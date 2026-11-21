@@ -1,0 +1,11 @@
+{
+  "id": "baris-kotak-kuning",
+  "name": "Baris Kotak Kuning",
+  "category": "baris_bergaya",
+  "font": { "family": "Poppins", "file": "Poppins-Bold.ttf", "size": 64, "bold": true, "italic": false, "uppercase": false, "letter_spacing": 0 },
+  "colors": { "text": "#111111", "highlight": "#8B0A3C", "outline": "#FFE14D", "shadow": "#00000000" },
+  "outline": 14, "shadow": 0, "blur": 0,
+  "box": { "color": "#FFE14D", "padding": 20 },
+  "glow": null, "emphasis": "none", "emphasis_scale": null,
+  "words_per_line": 3, "alignment": 2, "margin_v": 450, "margin_lr": 80
+}

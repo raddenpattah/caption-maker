@@ -1,0 +1,12 @@
+{
+  "id": "tekan-ungu-kotak-gelap",
+  "name": "Tekan Ungu Kotak Gelap",
+  "category": "penekanan_kata",
+  "font": { "family": "Poppins", "file": "Poppins-Bold.ttf", "size": 72, "bold": true, "italic": false, "uppercase": false, "letter_spacing": 0 },
+  "colors": { "text": "#FFFFFF", "highlight": "#B388FF", "outline": "#141414", "shadow": "#00000000" },
+  "outline": 16, "shadow": 0, "blur": 0,
+  "box": { "color": "#141414", "padding": 18 },
+  "glow": null,
+  "emphasis": "color_active", "emphasis_scale": null,
+  "words_per_line": 3, "alignment": 2, "margin_v": 450, "margin_lr": 80
+}

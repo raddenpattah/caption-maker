@@ -1,0 +1,11 @@
+{
+  "id": "tekan-garis-bawah",
+  "name": "Tekan Garis Bawah",
+  "category": "penekanan_kata",
+  "font": { "family": "Anton", "file": "Anton-Regular.ttf", "size": 92, "bold": false, "italic": false, "uppercase": true, "letter_spacing": 1 },
+  "colors": { "text": "#FFFFFF", "highlight": "#FFE14D", "outline": "#000000", "shadow": "#00000080" },
+  "outline": 6, "shadow": 3, "blur": 0,
+  "box": null, "glow": null,
+  "emphasis": "underline_active", "emphasis_scale": null,
+  "words_per_line": 2, "alignment": 2, "margin_v": 450, "margin_lr": 80
+}

@@ -1,0 +1,11 @@
+{
+  "id": "tekan-besar",
+  "name": "Tekan Besar",
+  "category": "penekanan_kata",
+  "font": { "family": "Poppins ExtraBold", "file": "Poppins-ExtraBold.ttf", "size": 76, "bold": false, "italic": false, "uppercase": true, "letter_spacing": 0 },
+  "colors": { "text": "#FFFFFF", "highlight": "#C6FF3D", "outline": "#000000", "shadow": "#00000080" },
+  "outline": 7, "shadow": 4, "blur": 0,
+  "box": null, "glow": null,
+  "emphasis": "scale_active", "emphasis_scale": 118,
+  "words_per_line": 2, "alignment": 2, "margin_v": 450, "margin_lr": 80
+}

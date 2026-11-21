@@ -1,0 +1,11 @@
+{
+  "id": "baris-isi-kuning",
+  "name": "Baris Isi Kuning",
+  "category": "baris_bergaya",
+  "font": { "family": "Poppins", "file": "Poppins-Bold.ttf", "size": 68, "bold": true, "italic": false, "uppercase": false, "letter_spacing": 0 },
+  "colors": { "text": "#FFFFFF", "highlight": "#FFE14D", "outline": "#000000", "shadow": "#00000080" },
+  "outline": 7, "shadow": 3, "blur": 0,
+  "box": null, "glow": null,
+  "emphasis": "fill", "emphasis_scale": null,
+  "words_per_line": 3, "alignment": 2, "margin_v": 450, "margin_lr": 80
+}

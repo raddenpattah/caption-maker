@@ -1,0 +1,12 @@
+{
+  "id": "baris-neon-mint",
+  "name": "Baris Neon Mint",
+  "category": "baris_bergaya",
+  "font": { "family": "Poppins ExtraBold", "file": "Poppins-ExtraBold.ttf", "size": 72, "bold": false, "italic": false, "uppercase": true, "letter_spacing": 2 },
+  "colors": { "text": "#5CFFC0", "highlight": "#FFFFFF", "outline": "#003820", "shadow": "#00000000" },
+  "outline": 6, "shadow": 0, "blur": 0,
+  "box": null,
+  "glow": { "color": "#5CFFC0", "radius": 12 },
+  "emphasis": "none", "emphasis_scale": null,
+  "words_per_line": 3, "alignment": 2, "margin_v": 450, "margin_lr": 80
+}
