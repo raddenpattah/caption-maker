@@ -147,3 +147,14 @@ fn real_sample_fixture_merges_into_expected_word_count() {
             .expect("parse the captured Whisper token fixture");
     assert_eq!(merge_tokens_to_words(&tokens).len(), 48);
 }
+
+#[test]
+fn merged_words_serialize_as_pretty_word_array() {
+    let words = merge_tokens_to_words(&[token(" Halo", 100, 250, false)]);
+    let serialized = serde_json::to_string_pretty(&words).expect("serialize merged words");
+
+    assert_eq!(
+        serialized,
+        "[\n  {\n    \"text\": \"Halo\",\n    \"start_ms\": 100,\n    \"end_ms\": 250\n  }\n]"
+    );
+}

@@ -27,6 +27,8 @@ struct Args {
     #[arg(long)]
     dump_tokens: Option<PathBuf>,
     #[arg(long)]
+    dump_words: Option<PathBuf>,
+    #[arg(long)]
     prompt: Option<String>,
     #[arg(long)]
     threads: Option<i32>,
@@ -91,6 +93,12 @@ fn run(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let words = merge_tokens_to_words(&tokens);
+    if let Some(path) = args.dump_words {
+        let mut file = File::create(path)?;
+        serde_json::to_writer_pretty(&mut file, &words)?;
+        file.write_all(b"\n")?;
+    }
+
     let groups = group_words(&words, args.words.into());
     let output_path = args
         .output
