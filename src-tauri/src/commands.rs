@@ -221,7 +221,7 @@ pub async fn transcribe(
         "transcribe_progress",
         serde_json::json!({ "stage": "Mengekstrak audio", "progress": 0 }),
     );
-    caption_core::extract_audio(std::path::Path::new("ffmpeg"), &input_path, &tmp_wav)
+    caption_core::extract_audio(&sidecar_path("ffmpeg"), &input_path, &tmp_wav)
         .map_err(|e| format!("ekstrak audio: {e}"))?;
     let _ = app.emit(
         "transcribe_progress",
@@ -265,4 +265,87 @@ pub async fn transcribe(
     _request: TranscribeRequest,
 ) -> Result<Vec<WordDto>, String> {
     Err("fitur whisper tidak aktif; kompilasi dengan --features whisper".into())
+}
+
+// ---------- Lokasi sidecar FFmpeg/ffprobe ----------
+
+/// Tauri menaruh sidecar (`ffmpeg.exe`, `ffprobe.exe`) di folder yang sama dengan
+/// exe aplikasi. Fungsi ini memakai berkas itu bila ada, dan jatuh ke nama polos
+/// (dicari lewat PATH) bila tidak ada.
+pub fn sidecar_path(name: &str) -> std::path::PathBuf {
+    let exe = std::env::current_exe().ok();
+    sidecar_path_in(exe.as_deref().and_then(|p| p.parent()), name)
+}
+
+/// Versi yang bisa dites: folder exe diberikan dari luar.
+pub fn sidecar_path_in(exe_dir: Option<&std::path::Path>, name: &str) -> std::path::PathBuf {
+    let file = if cfg!(windows) {
+        format!("{name}.exe")
+    } else {
+        name.to_string()
+    };
+    if let Some(dir) = exe_dir {
+        let candidate = dir.join(&file);
+        if candidate.is_file() {
+            return candidate;
+        }
+    }
+    std::path::PathBuf::from(name)
+}
+
+#[cfg(test)]
+mod sidecar_tests {
+    use super::{sidecar_path, sidecar_path_in};
+    use std::path::{Path, PathBuf};
+
+    fn unique_dir(tag: &str) -> PathBuf {
+        let nonce = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!(
+            "caption-sidecar-{tag}-{}-{nonce}",
+            std::process::id()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn exe_name(name: &str) -> String {
+        if cfg!(windows) {
+            format!("{name}.exe")
+        } else {
+            name.to_string()
+        }
+    }
+
+    #[test]
+    fn prefers_file_next_to_exe() {
+        let dir = unique_dir("ada");
+        let file = dir.join(exe_name("ffmpeg"));
+        std::fs::write(&file, b"x").unwrap();
+        assert_eq!(sidecar_path_in(Some(dir.as_path()), "ffmpeg"), file);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn falls_back_to_plain_name_when_missing() {
+        let dir = unique_dir("kosong");
+        assert_eq!(
+            sidecar_path_in(Some(dir.as_path()), "ffmpeg"),
+            PathBuf::from("ffmpeg")
+        );
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn falls_back_when_exe_dir_unknown() {
+        assert_eq!(sidecar_path_in(None, "ffprobe"), PathBuf::from("ffprobe"));
+    }
+
+    #[test]
+    fn unknown_sidecar_falls_back_to_plain_name() {
+        let p = sidecar_path("sidecar-yang-tidak-ada");
+        assert_eq!(p, Path::new("sidecar-yang-tidak-ada"));
+    }
 }
