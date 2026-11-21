@@ -443,6 +443,11 @@ button:disabled {
   bottom: 10%;
 }
 
+.karaoke-word {
+  display: inline-block;
+  white-space: pre;
+}
+
 .preview-placeholder {
   color: #c8cbd1;
   font-size: 12px;

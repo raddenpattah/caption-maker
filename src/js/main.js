@@ -5,6 +5,7 @@ import {
   pickInputFile,
   transcribe,
 } from "./api.js";
+import { renderPreview } from "./preview.js";
 import { createState } from "./state.js";
 
 const state = createState();
@@ -44,35 +45,15 @@ function currentMediaElement() {
 
 function renderPreviewText() {
   const { words, currentMs, settings } = state.get();
-  previewSubtitle.dataset.position = settings.position;
-  previewSubtitle.style.fontFamily = settings.font;
-  previewSubtitle.style.fontSize = `${settings.fontSize}px`;
-  previewSubtitle.style.color = settings.textColor;
-  previewSubtitle.style.webkitTextStroke = `${settings.outline}px #000`;
-  previewSubtitle.style.textShadow = settings.shadow
-    ? `0 ${settings.shadow}px ${settings.shadow * 2}px #000`
-    : "none";
-
-  const activeWord = words.find(
-    (word) => currentMs >= word.start_ms && currentMs <= word.end_ms,
-  );
-  previewSubtitle.replaceChildren();
-  if (!activeWord) {
+  const hasActiveGroup = renderPreview(previewSubtitle, words, currentMs, settings);
+  if (!hasActiveGroup) {
     const placeholder = document.createElement("span");
     placeholder.className = "preview-placeholder";
     placeholder.textContent = words.length
       ? "Putar atau geser waktu untuk melihat subtitle"
       : "Pratinjau subtitle akan tampil di sini";
     previewSubtitle.append(placeholder);
-    return;
   }
-
-  const text = document.createElement("span");
-  text.textContent = activeWord.text;
-  if (settings.highlight) {
-    text.style.color = settings.highlightColor;
-  }
-  previewSubtitle.append(text);
 }
 
 function updateClock(milliseconds) {
