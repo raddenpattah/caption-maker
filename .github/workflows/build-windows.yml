@@ -6,6 +6,16 @@ on:
     tags: ['v*']
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+env:
+  # FFmpeg dari gyan.dev (GPL v3, termasuk x264 dan libass), dipin ke satu versi.
+  # Hash adalah SHA256 dari berkas .exe hasil ekstraksi (bukan .zip) yang sudah diuji manual.
+  FFMPEG_TAG: "9.1"
+  FFMPEG_EXE_SHA256: "ED8F66CB877087A96F5BBB40A2944F0E764F2AD8870D5CB647360D912E62BC07"
+  FFPROBE_EXE_SHA256: "DF0199F606FAA88E9AD192732A7C3987ACFB647663534C297772E17730611A08"
+
 jobs:
   build:
     runs-on: windows-latest
@@ -25,13 +35,38 @@ jobs:
         with:
           workspaces: ". -> target"
 
-      - name: Download FFmpeg (Windows GPL build)
+      - name: Download FFmpeg (versi tetap) dan verifikasi SHA256
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          Invoke-WebRequest -Uri "https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip" -OutFile "ffmpeg.zip"
-          Expand-Archive -Path "ffmpeg.zip" -DestinationPath "ffmpeg-extracted"
-          $ffmpegDir = Get-ChildItem -Path "ffmpeg-extracted" -Directory | Select-Object -First 1
-          Copy-Item "$($ffmpegDir.FullName)\bin\ffmpeg.exe" "src-tauri/binaries/ffmpeg-x86_64-pc-windows-msvc.exe"
+          gh release download $env:FFMPEG_TAG --repo GyanD/codexffmpeg --pattern "*essentials_build.zip" --dir ffmpeg-dl
+          if ($LASTEXITCODE -ne 0) { throw "Gagal mengunduh FFmpeg $env:FFMPEG_TAG dari GyanD/codexffmpeg" }
+
+          $zip = Get-ChildItem ffmpeg-dl -Filter *.zip | Select-Object -First 1
+          if (-not $zip) { throw "Paket essentials_build.zip tidak ditemukan di rilis $env:FFMPEG_TAG" }
+          Write-Host "Paket: $($zip.Name)"
+
+          Expand-Archive -Path $zip.FullName -DestinationPath ffmpeg-extracted
+          $bin = Get-ChildItem ffmpeg-extracted -Recurse -Directory -Filter bin | Select-Object -First 1
+          if (-not $bin) { throw "Folder bin tidak ditemukan di paket FFmpeg" }
+
+          New-Item -ItemType Directory -Force src-tauri/binaries | Out-Null
+          Copy-Item (Join-Path $bin.FullName "ffmpeg.exe")  "src-tauri/binaries/ffmpeg-x86_64-pc-windows-msvc.exe"
+          Copy-Item (Join-Path $bin.FullName "ffprobe.exe") "src-tauri/binaries/ffprobe-x86_64-pc-windows-msvc.exe"
+
+          $checks = @(
+            @{ Name = "ffmpeg";  Expected = $env:FFMPEG_EXE_SHA256 },
+            @{ Name = "ffprobe"; Expected = $env:FFPROBE_EXE_SHA256 }
+          )
+          foreach ($c in $checks) {
+            $path = "src-tauri/binaries/$($c.Name)-x86_64-pc-windows-msvc.exe"
+            $actual = (Get-FileHash $path -Algorithm SHA256).Hash
+            if ($actual -ne $c.Expected) {
+              throw "SHA256 $($c.Name) tidak cocok. Diharapkan $($c.Expected), diperoleh $actual"
+            }
+            Write-Host "OK $($c.Name) SHA256 $actual"
+          }
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "^2" --locked
@@ -47,3 +82,23 @@ jobs:
             target/release/bundle/msi/*.msi
             target/release/bundle/nsis/*.exe
           retention-days: 7
+
+  release:
+    # Hanya berjalan saat push tag v* (contoh: v0.1.0)
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Unduh installer dari job build
+        uses: actions/download-artifact@v4
+        with:
+          name: caption-maker-installer
+          path: dist
+
+      - name: Buat GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**/*
+          generate_release_notes: true
