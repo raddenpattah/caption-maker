@@ -9,6 +9,210 @@
     <script type="module" src="./js/main.js"></script>
   </head>
   <body>
-    <main id="app" aria-label="Caption Maker"></main>
+    <div class="app-shell" id="app">
+      <header class="app-header">
+        <a class="brand" href="./index.html" aria-label="Caption Maker, beranda">
+          <span class="brand-mark" aria-hidden="true">C</span>
+          <span>Caption Maker</span>
+        </a>
+        <nav class="menu-bar" aria-label="Menu utama">
+          <details class="menu">
+            <summary>File</summary>
+            <div class="menu-panel">
+              <button type="button" disabled>Buka proyek (belum tersedia)</button>
+              <button type="button" disabled>Simpan proyek (belum tersedia)</button>
+            </div>
+          </details>
+          <details class="menu">
+            <summary>Model</summary>
+            <div class="menu-panel">
+              <button id="menu-import-model" type="button">Impor model...</button>
+              <p>Pengelolaan model masih berupa simulasi.</p>
+            </div>
+          </details>
+          <details class="menu">
+            <summary>Pengaturan</summary>
+            <div class="menu-panel">
+              <p>Tema gelap digunakan pada fase UI ini.</p>
+              <button type="button" disabled>Preferensi (belum tersedia)</button>
+            </div>
+          </details>
+          <details class="menu">
+            <summary>Bantuan</summary>
+            <div class="menu-panel menu-panel-help">
+              <strong>Lisensi</strong>
+              <p>Lisensi pihak ketiga: Whisper MIT, whisper.cpp MIT, FFmpeg LGPL/GPL</p>
+            </div>
+          </details>
+        </nav>
+        <span class="offline-indicator"><span aria-hidden="true"></span>Offline</span>
+      </header>
+
+      <main class="workspace" aria-label="Editor subtitle">
+        <section class="left-column" aria-label="Masukan dan pratinjau">
+          <section class="panel source-panel" aria-labelledby="source-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">01 / SUMBER</p>
+                <h1 id="source-title">Pilih media</h1>
+              </div>
+              <span class="step-badge" aria-hidden="true">01</span>
+            </div>
+            <div class="drop-zone" id="drop-zone" role="group" aria-label="Zona seret dan lepas berkas media">
+              <div class="drop-icon" aria-hidden="true">↑</div>
+              <p class="drop-title">Seret dan lepas berkas di sini</p>
+              <p class="muted">MP4, MKV, MOV, MP3, WAV, atau M4A</p>
+              <button class="button button-secondary" id="choose-file" type="button">Pilih File</button>
+            </div>
+            <div class="file-summary" aria-live="polite">
+              <span class="file-icon" aria-hidden="true">♫</span>
+              <div class="file-details">
+                <strong id="file-name">Belum ada file dipilih</strong>
+                <span id="file-duration">Durasi: —</span>
+              </div>
+              <button id="remove-file" class="icon-button" type="button" aria-label="Hapus file media" disabled>×</button>
+            </div>
+          </section>
+
+          <section class="panel preview-panel" aria-labelledby="preview-title">
+            <div class="section-heading">
+              <div>
+                <p class="eyebrow">02 / PRATINJAU</p>
+                <h2 id="preview-title">Pratinjau video</h2>
+              </div>
+              <span class="preview-tag">SIMULASI</span>
+            </div>
+            <div class="preview-stage" id="preview-stage">
+              <video id="video-player" class="media-player" playsinline hidden aria-label="Pratinjau video lokal"></video>
+              <audio id="audio-player" hidden aria-label="Pemutar audio lokal"></audio>
+              <div id="preview-subtitle" class="subtitle-layer" aria-live="polite">
+                <span class="preview-placeholder">Pratinjau subtitle akan tampil di sini</span>
+              </div>
+              <div class="stage-watermark" aria-hidden="true">CAPTION MAKER</div>
+            </div>
+            <div class="preview-controls">
+              <button class="icon-button play-button" id="play-pause" type="button" aria-label="Putar pratinjau" aria-pressed="false">▶</button>
+              <span class="time-display" id="current-time">00:00</span>
+              <label class="sr-only" for="seek-slider">Posisi waktu pratinjau</label>
+              <input id="seek-slider" class="seek-slider" type="range" min="0" max="60" value="0" step="0.05" />
+              <span class="time-display" id="total-time">00:00</span>
+            </div>
+          </section>
+        </section>
+
+        <aside class="panel settings-panel" aria-labelledby="settings-title">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">03 / GAYA</p>
+              <h2 id="settings-title">Pengaturan subtitle</h2>
+            </div>
+            <span class="step-badge" aria-hidden="true">03</span>
+          </div>
+
+          <div id="model-guidance" class="model-guidance" hidden>
+            <strong>Belum ada model terpasang</strong>
+            <p>Impor model Whisper untuk menyiapkan transkripsi.</p>
+            <button class="button button-secondary" id="guidance-import" type="button">Impor model</button>
+          </div>
+
+          <div class="field model-field">
+            <label for="model-select">Model</label>
+            <div class="model-row">
+              <select id="model-select"></select>
+              <button class="button button-secondary import-button" id="import-model" type="button">Impor</button>
+            </div>
+            <small id="model-status" class="field-note">Model small tersedia dalam simulasi.</small>
+          </div>
+
+          <fieldset class="field">
+            <legend>Kata per baris</legend>
+            <div class="segmented-control">
+              <label><input type="radio" name="words-per-line" value="1" /><span>1 kata</span></label>
+              <label><input type="radio" name="words-per-line" value="2" checked /><span>2 kata</span></label>
+              <label><input type="radio" name="words-per-line" value="3" /><span>3 kata</span></label>
+            </div>
+          </fieldset>
+
+          <label class="toggle-row" for="highlight-toggle">
+            <span><strong>Highlight karaoke</strong><small>Isi kata secara progresif</small></span>
+            <input id="highlight-toggle" type="checkbox" checked />
+            <span class="toggle-switch" aria-hidden="true"></span>
+          </label>
+
+          <div class="field">
+            <label for="font-select">Font</label>
+            <select id="font-select">
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="system-ui, sans-serif">System UI</option>
+              <option value="Verdana, sans-serif">Verdana</option>
+              <option value="Georgia, serif">Georgia</option>
+              <option value="Trebuchet MS, sans-serif">Trebuchet MS</option>
+              <option value="monospace">Monospace</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <div class="label-with-value">
+              <label for="font-size">Ukuran</label>
+              <output id="font-size-value" for="font-size">48 px</output>
+            </div>
+            <input id="font-size" type="range" min="20" max="80" value="48" />
+          </div>
+
+          <div class="color-row">
+            <div class="field">
+              <label for="text-color">Warna teks</label>
+              <div class="color-input"><input id="text-color" type="color" value="#ffffff" /><span>#FFFFFF</span></div>
+            </div>
+            <div class="field">
+              <label for="highlight-color">Warna highlight</label>
+              <div class="color-input"><input id="highlight-color" type="color" value="#ffdc64" /><span>#FFDC64</span></div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="position-select">Posisi</label>
+            <select id="position-select">
+              <option value="top">Atas</option>
+              <option value="middle">Tengah</option>
+              <option value="bottom" selected>Bawah</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <div class="label-with-value">
+              <label for="outline-size">Outline</label>
+              <output id="outline-value" for="outline-size">3 px</output>
+            </div>
+            <input id="outline-size" type="range" min="0" max="8" value="3" />
+          </div>
+
+          <div class="field">
+            <div class="label-with-value">
+              <label for="shadow-size">Bayangan</label>
+              <output id="shadow-value" for="shadow-size">2 px</output>
+            </div>
+            <input id="shadow-size" type="range" min="0" max="8" value="2" />
+          </div>
+
+          <button class="button button-primary generate-button" id="generate-subtitles" type="button" disabled>
+            Buat Subtitle
+          </button>
+          <p class="settings-disclaimer">Transkripsi dan pratinjau di halaman ini menggunakan data mock.</p>
+        </aside>
+      </main>
+
+      <footer class="task-bar" aria-label="Proses dan ekspor">
+        <div class="progress-area">
+          <div class="progress-heading">
+            <span id="progress-label">Siap — pilih media untuk memulai</span>
+            <span id="progress-percent">0%</span>
+          </div>
+          <progress id="progress-bar" max="100" value="0" aria-labelledby="progress-label">0%</progress>
+        </div>
+        <button class="button button-secondary" id="cancel-task" type="button" disabled>Batalkan</button>
+        <button class="button button-primary export-button" id="export-ass" type="button" disabled>Ekspor .ass</button>
+      </footer>
+    </div>
   </body>
 </html>
