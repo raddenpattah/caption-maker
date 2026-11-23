@@ -4,7 +4,7 @@
 //! `render_ass_with_preset` untuk mode emphasis dan fitur preset.
 //! Semua ukuran preset dalam piksel acuan sisi pendek 1080.
 
-use crate::model::Group;
+use crate::model::{Group, WordsPerLine};
 use crate::preset::{Emphasis, StylePreset};
 
 /// Geometri video sebenarnya (setelah rotasi).
@@ -28,7 +28,7 @@ impl VideoGeometry {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct PresetOptions {
     /// Override `words_per_line` dari preset (None = pakai preset).
-    pub words_per_line: Option<u8>,
+    pub words_per_line: Option<WordsPerLine>,
 }
 
 /// Karakter teks yang harus di-escape di ASS.
@@ -153,22 +153,21 @@ pub fn render_ass_with_preset(
     geometry: VideoGeometry,
     options: &PresetOptions,
 ) -> String {
-    let words_per_line = options
-        .words_per_line
-        .or(Some(preset.words_per_line))
-        .unwrap_or(1)
-        .clamp(1, 3) as usize;
+    let per_line = options.words_per_line.or(preset.words_per_line_enum().ok());
 
-    // Regrouping: kelompokkan ulang per kata sesuai words_per_line.
-    let regrouped: Vec<Group> = groups
-        .iter()
-        .flat_map(|g| g.words.iter().cloned())
-        .collect::<Vec<_>>()
-        .chunks(words_per_line)
-        .map(|chunk| Group {
-            words: chunk.to_vec(),
-        })
-        .collect();
+    let regrouped: Vec<Group> = match per_line {
+        Some(WordsPerLine::Sentence) => groups.to_vec(),
+        Some(per_line) => groups
+            .iter()
+            .flat_map(|g| g.words.iter().cloned())
+            .collect::<Vec<_>>()
+            .chunks(per_line.get())
+            .map(|chunk| Group {
+                words: chunk.to_vec(),
+            })
+            .collect(),
+        None => Vec::new(),
+    };
 
     let mut out = String::new();
     out.push_str("[Script Info]\n");

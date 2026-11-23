@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use caption_core::video::{
     build_burn_args, default_ffprobe_for, parse_ffprobe_json, parse_progress_line, percent,
-    Quality, VideoInfo,
+    Quality, VideoInfo, WorkDirGuard,
 };
 
 fn probe_json_1080x1920_aac() -> &'static str {
@@ -114,6 +114,14 @@ fn parse_missing_video_stream_fails() {
     assert!(parse_ffprobe_json(bad).is_err());
 }
 
+#[test]
+fn parse_unknown_duration_as_zero() {
+    let json =
+        r#"{"streams":[{"codec_type":"video","width":1080,"height":1920,"pix_fmt":"yuv420p"}]}"#;
+    let info = parse_ffprobe_json(json).unwrap();
+    assert_eq!(info.duration_s, 0.0);
+}
+
 fn sample_info(codec: Option<&str>) -> VideoInfo {
     VideoInfo {
         width: 1080,
@@ -138,6 +146,7 @@ fn burn_args_quality_cepat_uses_crf23_veryfast() {
     assert!(args
         .windows(2)
         .any(|w| w[0] == "-preset" && w[1] == "veryfast"));
+    assert!(args.iter().any(|arg| arg == "-y"));
 }
 
 #[test]
@@ -266,6 +275,18 @@ fn percent_normal() {
 #[test]
 fn percent_zero_duration_is_safe() {
     assert_eq!(percent(1_000_000, 0.0), 0);
+    assert_eq!(percent(1_000_000, f64::NAN), 0);
+}
+
+#[test]
+fn work_dir_guard_removes_directory_on_drop() {
+    let work = WorkDirGuard::new("caption-work-dir-test").unwrap();
+    let path = work.path().to_path_buf();
+    std::fs::write(path.join("temporary.txt"), "temporary").unwrap();
+
+    drop(work);
+
+    assert!(!path.exists());
 }
 
 #[test]

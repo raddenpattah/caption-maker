@@ -7,6 +7,10 @@
 
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+static WORK_DIR_COUNTER: AtomicU64 = AtomicU64::new(0);
 
 /// Font yang ditanam ke binary lewat `include_bytes!`.
 pub struct BundledFont {
@@ -39,6 +43,7 @@ pub const BUNDLED_FONTS: &[BundledFont] = &[
 pub struct VideoInfo {
     pub width: u32,
     pub height: u32,
+    /// Durasi dalam detik; `0.0` berarti ffprobe tidak memberikannya.
     pub duration_s: f64,
     pub audio_codec: Option<String>,
     pub pix_fmt: String,
@@ -118,7 +123,7 @@ pub fn parse_ffprobe_json(json: &str) -> Result<VideoInfo, String> {
                 .and_then(|d| d.as_str())
                 .and_then(|d| d.parse::<f64>().ok())
         })
-        .ok_or("ffprobe JSON: durasi tidak ditemukan")?;
+        .unwrap_or(0.0);
 
     let pix_fmt = vs
         .get("pix_fmt")
@@ -243,6 +248,58 @@ pub fn setup_work_dir(work_dir: &Path, ass_content: &str) -> Result<(), String> 
     Ok(())
 }
 
+/// Direktori kerja unik yang selalu dibersihkan ketika guard di-drop.
+pub struct WorkDirGuard {
+    path: PathBuf,
+}
+
+impl WorkDirGuard {
+    pub fn new(prefix: &str) -> Result<Self, String> {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|error| format!("waktu sistem tidak valid: {error}"))?
+            .as_nanos();
+        let counter = WORK_DIR_COUNTER.fetch_add(1, Ordering::Relaxed);
+        let path =
+            std::env::temp_dir().join(format!("{prefix}-{}-{nonce}-{counter}", std::process::id()));
+        std::fs::create_dir(&path)
+            .map_err(|error| format!("buat direktori sementara '{}': {error}", path.display()))?;
+        Ok(Self { path })
+    }
+
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub fn cleanup(&mut self) -> Result<(), String> {
+        if self.path.as_os_str().is_empty() {
+            return Ok(());
+        }
+        match std::fs::remove_dir_all(&self.path) {
+            Ok(()) => {
+                self.path.clear();
+                Ok(())
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                self.path.clear();
+                Ok(())
+            }
+            Err(error) => Err(format!(
+                "hapus direktori sementara '{}': {error}",
+                self.path.display()
+            )),
+        }
+    }
+}
+
+impl Drop for WorkDirGuard {
+    fn drop(&mut self) {
+        if !self.path.as_os_str().is_empty() {
+            let _ = std::fs::remove_dir_all(&self.path);
+        }
+    }
+}
+
 /// Satu baris progress ffmpeg (`out_time_us=...` atau `progress=end`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ProgressUpdate {
@@ -281,7 +338,7 @@ pub fn parse_progress_line(line: &str) -> Option<ProgressUpdate> {
 
 /// Persen 0..=100 dari `out_time_us` terhadap durasi detik.
 pub fn percent(done_us: u64, duration_s: f64) -> u8 {
-    if duration_s <= 0.0 {
+    if !duration_s.is_finite() || duration_s <= 0.0 {
         return 0;
     }
     let total_us = duration_s * 1_000_000.0;

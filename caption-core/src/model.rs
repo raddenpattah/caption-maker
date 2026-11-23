@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use serde::{Deserialize, Serialize};
@@ -46,11 +47,17 @@ pub enum WordsPerLine {
     One = 1,
     Two = 2,
     Three = 3,
+    Sentence = 0,
 }
 
 impl WordsPerLine {
     pub fn get(self) -> usize {
-        self as usize
+        match self {
+            WordsPerLine::One => 1,
+            WordsPerLine::Two => 2,
+            WordsPerLine::Three => 3,
+            WordsPerLine::Sentence => 0,
+        }
     }
 }
 
@@ -60,6 +67,7 @@ pub struct TranscribeOptions {
     pub threads: i32,
     pub initial_prompt: Option<String>,
     pub on_progress: Option<Arc<dyn Fn(i32) + Send + Sync>>,
+    pub on_abort: Option<Arc<AtomicBool>>,
 }
 
 impl TranscribeOptions {
@@ -75,6 +83,7 @@ impl TranscribeOptions {
             threads,
             initial_prompt: None,
             on_progress: None,
+            on_abort: None,
         }
     }
 }

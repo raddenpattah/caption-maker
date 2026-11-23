@@ -1,4 +1,4 @@
-use caption_core::model::{Group, Word};
+use caption_core::model::{Group, Word, WordsPerLine};
 use caption_core::preset::find_preset;
 use caption_core::preset_render::{
     ass_color_from_hex, render_ass_with_preset, PresetOptions, VideoGeometry,
@@ -297,7 +297,7 @@ fn ass_color_rrggbbaa_alpha_inverted() {
 fn words_per_line_override_works() {
     let p = find_preset("kata-tebal-putih").unwrap(); // default 1
     let opts = PresetOptions {
-        words_per_line: Some(3),
+        words_per_line: Some(WordsPerLine::Three),
     };
     let ass = render_ass_with_preset(&words_5(), &p, portrait(), &opts);
     let events = dialogue_lines(&ass);

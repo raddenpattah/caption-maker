@@ -27,7 +27,7 @@
             <summary>Model</summary>
             <div class="menu-panel">
               <button id="menu-import-model" type="button">Impor model...</button>
-              <p>Pengelolaan model masih berupa simulasi.</p>
+              <p id="model-menu-status">Model Whisper disimpan secara lokal di aplikasi desktop.</p>
             </div>
           </details>
           <details class="menu">
@@ -45,42 +45,27 @@
             </div>
           </details>
         </nav>
+        <div class="drop-zone compact header-media-picker" id="drop-zone" role="group" aria-label="Pilih atau seret berkas media">
+          <div class="compact-info">
+            <strong id="file-name">Belum ada file dipilih</strong>
+            <span class="muted" id="file-duration">Seret file atau pilih di sini</span>
+          </div>
+          <div class="compact-actions">
+            <button class="button button-secondary" id="choose-file" type="button">Pilih File</button>
+            <button id="remove-file" class="icon-button" type="button" aria-label="Hapus file media" disabled>×</button>
+          </div>
+        </div>
         <span class="offline-indicator"><span aria-hidden="true"></span>Sepenuhnya luring</span>
       </header>
 
       <main class="workspace" aria-label="Editor subtitle">
         <section class="left-column" aria-label="Masukan dan pratinjau">
-          <section class="panel source-panel" aria-labelledby="source-title">
-            <div class="section-heading">
-              <div>
-                <p class="eyebrow">01 / SUMBER</p>
-                <h1 id="source-title">Pilih media</h1>
-              </div>
-              <span class="step-badge" aria-hidden="true">01</span>
-            </div>
-            <div class="drop-zone" id="drop-zone" role="group" aria-label="Zona seret dan lepas berkas media">
-              <div class="drop-icon" aria-hidden="true">↑</div>
-              <p class="drop-title">Seret dan lepas berkas di sini</p>
-              <p class="muted">MP4, MKV, MOV, MP3, WAV, atau M4A</p>
-              <button class="button button-secondary" id="choose-file" type="button">Pilih File</button>
-            </div>
-            <div class="file-summary" aria-live="polite">
-              <span class="file-icon" aria-hidden="true">♫</span>
-              <div class="file-details">
-                <strong id="file-name">Belum ada file dipilih</strong>
-                <span id="file-duration">Durasi: —</span>
-              </div>
-              <button id="remove-file" class="icon-button" type="button" aria-label="Hapus file media" disabled>×</button>
-            </div>
-          </section>
-
           <section class="panel preview-panel" aria-labelledby="preview-title">
             <div class="section-heading">
               <div>
-                <p class="eyebrow">02 / PRATINJAU</p>
                 <h2 id="preview-title">Pratinjau video</h2>
               </div>
-              <span class="preview-tag">SIMULASI</span>
+              <span class="preview-tag">PRATINJAU</span>
             </div>
             <div class="preview-stage" id="preview-stage">
               <video id="video-player" class="media-player" playsinline hidden aria-label="Pratinjau video lokal"></video>
@@ -91,11 +76,16 @@
               <div class="stage-watermark" aria-hidden="true">CAPTION MAKER</div>
             </div>
             <div class="preview-controls">
+              <button class="icon-button transport-button" id="seek-back-5" type="button" aria-label="Mundur 5 detik" title="Mundur 5 detik" disabled>⏪</button>
+              <button class="icon-button transport-button frame-button" id="frame-backward" type="button" aria-label="Frame sebelumnya" title="Frame sebelumnya" disabled>&lt;</button>
               <button class="icon-button play-button" id="play-pause" type="button" aria-label="Putar pratinjau" aria-pressed="false">▶</button>
+              <button class="icon-button transport-button frame-button" id="frame-forward" type="button" aria-label="Frame berikutnya" title="Frame berikutnya" disabled>&gt;</button>
+              <button class="icon-button transport-button" id="seek-forward-5" type="button" aria-label="Maju 5 detik" title="Maju 5 detik" disabled>⏩</button>
               <span class="time-display" id="current-time">00:00</span>
               <label class="sr-only" for="seek-slider">Posisi waktu pratinjau</label>
               <input id="seek-slider" class="seek-slider" type="range" min="0" max="60" value="0" step="0.05" />
               <span class="time-display" id="total-time">00:00</span>
+              <button class="button button-secondary source-preview-button" id="show-source-video" type="button" hidden>Lihat video asli</button>
             </div>
           </section>
         </section>
@@ -109,6 +99,25 @@
             <span class="step-badge" aria-hidden="true">03</span>
           </div>
 
+          <div class="field preset-field">
+            <label>Gaya caption (preset)</label>
+            <div id="preset-gallery" class="preset-gallery is-disabled" role="radiogroup" aria-label="Pilih gaya caption" aria-disabled="true">
+              <p class="preset-loading">Memuat gaya caption...</p>
+            </div>
+            <small class="field-note">Preset mengesampingkan pengaturan manual yang ditentukannya.</small>
+          </div>
+
+          <fieldset id="words-per-line-field" class="field words-per-line-field">
+            <legend>Kata per baris</legend>
+            <div class="segmented-control">
+              <label><input type="radio" name="words-per-line" value="1" /><span>1 Kata</span></label>
+              <label><input type="radio" name="words-per-line" value="2" checked /><span>2 Kata</span></label>
+              <label><input type="radio" name="words-per-line" value="3" /><span>3 Kata</span></label>
+              <label><input type="radio" name="words-per-line" value="4" /><span>Kalimat</span></label>
+            </div>
+            <small id="words-per-line-note" class="field-note" hidden>Diatur oleh preset ini.</small>
+          </fieldset>
+
           <div id="model-guidance" class="model-guidance" hidden>
             <strong>Belum ada model terpasang</strong>
             <p>Impor model Whisper untuk menyiapkan transkripsi.</p>
@@ -121,18 +130,13 @@
               <select id="model-select"></select>
               <button class="button button-secondary import-button" id="import-model" type="button">Impor</button>
             </div>
-            <small id="model-status" class="field-note">Model small tersedia dalam simulasi.</small>
+            <small id="model-status" class="field-note">Memuat daftar model...</small>
+            <small id="model-location" class="field-note"></small>
           </div>
 
-          <fieldset class="field">
-            <legend>Kata per baris</legend>
-            <div class="segmented-control">
-              <label><input type="radio" name="words-per-line" value="1" /><span>1 kata</span></label>
-              <label><input type="radio" name="words-per-line" value="2" checked /><span>2 kata</span></label>
-              <label><input type="radio" name="words-per-line" value="3" /><span>3 kata</span></label>
-            </div>
-          </fieldset>
-
+          <details class="advanced-settings">
+            <summary>⚙️ Kustomisasi Lanjutan (Manual)</summary>
+            <div class="advanced-content">
           <label class="toggle-row" for="highlight-toggle">
             <span><strong>Highlight karaoke</strong><small>Isi kata secara progresif</small></span>
             <input id="highlight-toggle" type="checkbox" checked />
@@ -194,13 +198,37 @@
             </div>
             <input id="shadow-size" type="range" min="0" max="8" value="2" />
           </div>
+            </div>
+          </details>
 
-          <button class="button button-primary generate-button" id="generate-subtitles" type="button" disabled>
-            Buat Subtitle
-          </button>
-          <p class="settings-disclaimer">Transkripsi dan pratinjau di halaman ini menggunakan data tiruan.</p>
+          <div class="subtitle-actions">
+            <button class="button button-secondary" id="edit-text" type="button" disabled>Edit Teks</button>
+            <button class="button button-primary generate-button" id="generate-subtitles" type="button" disabled>
+              Buat Subtitle
+            </button>
+          </div>
+          <p id="settings-disclaimer" class="settings-disclaimer">Transkripsi menggunakan model Whisper terpasang; overlay pratinjau adalah perkiraan CSS.</p>
         </aside>
       </main>
+
+      <dialog id="word-editor" class="word-editor" aria-labelledby="word-editor-title" aria-describedby="word-editor-description">
+        <div class="word-editor-content">
+          <header class="word-editor-heading">
+            <div>
+              <p class="eyebrow">KOREKSI TRANSKRIPSI</p>
+              <h2 id="word-editor-title">Edit kata</h2>
+            </div>
+          </header>
+          <p id="word-editor-description" class="word-editor-description">
+            Enter atau pindah fokus untuk menyimpan. Spasi membagi teks menjadi beberapa kata.
+          </p>
+          <div id="word-editor-list" class="word-editor-list" role="list" aria-label="Daftar kata subtitle"></div>
+          <footer class="word-editor-actions">
+            <button class="button button-secondary" id="reset-original-words" type="button" data-editor-control="reset">Kembalikan ke hasil asli</button>
+            <button class="button button-primary" id="close-word-editor" type="button" data-editor-control="close">Tutup</button>
+          </footer>
+        </div>
+      </dialog>
 
       <footer class="task-bar" aria-label="Proses dan ekspor">
         <div class="progress-area">
@@ -211,7 +239,16 @@
           <progress id="progress-bar" max="100" value="0" aria-labelledby="progress-label">0%</progress>
         </div>
         <button class="button button-secondary" id="cancel-task" type="button" disabled>Batalkan</button>
-        <button class="button button-primary export-button" id="export-ass" type="button" disabled>Ekspor .ass</button>
+        <label class="sr-only" for="export-format">Format ekspor</label>
+        <select class="export-format" id="export-format" aria-label="Format ekspor">
+          <option value="ass">ASS</option>
+          <option value="srt">SRT</option>
+          <option value="vtt">VTT</option>
+          <option value="txt">TXT</option>
+          <option value="json">JSON</option>
+        </select>
+        <button class="button button-secondary export-button" id="export-ass" type="button" disabled>Ekspor</button>
+        <button class="button button-primary create-video-button" id="create-video" type="button">Buat Video</button>
       </footer>
     </div>
   </body>

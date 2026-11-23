@@ -1,6 +1,37 @@
-use whisper_rs::{FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters};
+use std::ffi::c_void;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+
+use whisper_rs::{
+    FullParams, SamplingStrategy, WhisperContext, WhisperContextParameters, WhisperProgressCallback,
+};
 
 use crate::{CaptionError, RawToken, TranscribeOptions};
+
+type ProgressCallback = Arc<dyn Fn(i32) + Send + Sync>;
+
+unsafe extern "C" fn report_progress(
+    _context: *mut whisper_rs::WhisperSysContext,
+    _state: *mut whisper_rs::WhisperSysState,
+    progress: i32,
+    user_data: *mut c_void,
+) {
+    if user_data.is_null() {
+        return;
+    }
+    let callback = unsafe { &*(user_data as *const Mutex<ProgressCallback>) };
+    if let Ok(callback) = callback.lock() {
+        callback(progress);
+    }
+}
+
+unsafe extern "C" fn abort_if_requested(user_data: *mut c_void) -> bool {
+    if user_data.is_null() {
+        return false;
+    }
+    let abort_requested = unsafe { &*(user_data as *const AtomicBool) };
+    abort_requested.load(Ordering::Acquire)
+}
 
 pub fn transcribe(
     samples: &[f32],
@@ -16,6 +47,10 @@ pub fn transcribe(
     let context = WhisperContext::new_with_params(model_path, WhisperContextParameters::default())?;
     let mut state = context.create_state()?;
     let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
+    let progress_callback = options
+        .on_progress
+        .as_ref()
+        .map(|callback| Arc::new(Mutex::new(callback.clone())));
     params.set_language(Some(&options.language));
     params.set_translate(false);
     params.set_token_timestamps(true);
@@ -28,9 +63,22 @@ pub fn transcribe(
     if let Some(prompt) = &options.initial_prompt {
         params.set_initial_prompt(prompt);
     }
-    if let Some(on_progress) = &options.on_progress {
-        let on_progress = on_progress.clone();
-        params.set_progress_callback_safe(move |progress| on_progress(progress));
+    if let Some(progress_callback) = &progress_callback {
+        let callback: WhisperProgressCallback = Some(report_progress);
+        let callback_data = Arc::as_ptr(progress_callback) as *mut c_void;
+        // The Arc remains alive until `state.full` returns; this callback only reports a value.
+        unsafe {
+            params.set_progress_callback(callback);
+            params.set_progress_callback_user_data(callback_data);
+        }
+    }
+    if let Some(on_abort) = &options.on_abort {
+        let callback_data = Arc::as_ptr(on_abort) as *mut c_void;
+        // `options` owns this Arc until `state.full` returns, keeping callback data valid.
+        unsafe {
+            params.set_abort_callback(Some(abort_if_requested));
+            params.set_abort_callback_user_data(callback_data);
+        }
     }
 
     state.full(params, samples)?;

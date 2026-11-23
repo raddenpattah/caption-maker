@@ -13,6 +13,8 @@ export const defaultSettings = {
 export function createState() {
   let current = {
     words: [],
+    originalWords: null,
+    edited: false,
     media: null,
     generated: false,
     isPlaying: false,

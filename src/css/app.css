@@ -1,3 +1,35 @@
+@font-face {
+  font-family: "Poppins ExtraBold";
+  src: url("../assets/fonts/Poppins-ExtraBold.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Poppins";
+  src: url("../assets/fonts/Poppins-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Anton";
+  src: url("../assets/fonts/Anton-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
+@font-face {
+  font-family: "Bangers";
+  src: url("../assets/fonts/Bangers-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+}
+
 :root {
   color-scheme: dark;
   font-family: system-ui, sans-serif;
@@ -180,6 +212,82 @@ button:disabled {
   box-shadow: 0 0 0 3px #8bd1a01c;
 }
 
+.app-header .drop-zone.compact.header-media-picker {
+  flex: 0 1 320px;
+  flex-wrap: nowrap;
+  min-width: 0;
+  min-height: 0 !important;
+  justify-content: initial !important;
+  gap: 10px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  text-align: left !important;
+}
+
+.app-header .drop-zone.compact.header-media-picker .compact-info {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.app-header .drop-zone.compact.header-media-picker .compact-actions {
+  width: auto !important;
+  flex-shrink: 0 !important;
+}
+
+.app-header .drop-zone.compact.header-media-picker .compact-actions .button {
+  white-space: nowrap;
+}
+
+.app-header .drop-zone.compact.header-media-picker.drag-over {
+  border-color: var(--accent) !important;
+  background: #29261e !important;
+}
+
+@media (max-width: 1100px) {
+  .app-header {
+    gap: 14px;
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .menu summary {
+    padding-right: 8px;
+    padding-left: 8px;
+  }
+
+  .app-header .drop-zone.compact.header-media-picker {
+    flex-basis: 250px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-header {
+    height: auto;
+    min-height: 62px;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .menu-bar {
+    height: 36px;
+    flex: 1 1 auto;
+  }
+
+  .menu,
+  .menu summary {
+    height: 36px;
+  }
+
+  .app-header .drop-zone.compact.header-media-picker {
+    order: 3;
+    flex: 1 1 100%;
+  }
+}
+
 .workspace {
   display: grid;
   width: min(100%, 1600px);
@@ -204,7 +312,6 @@ button:disabled {
   background: var(--panel);
 }
 
-.source-panel,
 .preview-panel,
 .settings-panel {
   padding: 20px;
@@ -398,11 +505,10 @@ button:disabled {
   display: grid;
   width: 100%;
   overflow: hidden;
-  aspect-ratio: 16 / 9;
   place-items: center;
   border: 1px solid #343943;
   border-radius: 8px;
-  background: #050608;
+  background: #1e1e24;
 }
 
 .media-player {
@@ -410,16 +516,17 @@ button:disabled {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: black;
+  background: #1e1e24;
 }
 
 .subtitle-layer {
   position: absolute;
   z-index: 1;
-  right: 5%;
-  left: 5%;
-  display: flex;
-  justify-content: center;
+  right: auto;
+  left: var(--subtitle-video-left, 5%);
+  width: var(--subtitle-video-width, 90%);
+  max-width: 100%;
+  display: block;
   padding: 0 16px;
   color: #fff;
   font-size: 20px;
@@ -428,6 +535,10 @@ button:disabled {
   text-align: center;
   text-wrap: balance;
   pointer-events: none;
+}
+
+#preview-subtitle[hidden] {
+  display: none;
 }
 
 .subtitle-layer[data-position="top"] {
@@ -446,6 +557,16 @@ button:disabled {
 .karaoke-word {
   display: inline-block;
   white-space: pre;
+}
+
+.subtitle-content {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.1em 0.25em;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
 }
 
 .preview-placeholder {
@@ -472,11 +593,28 @@ button:disabled {
   padding-top: 12px;
 }
 
+.source-preview-button {
+  min-height: 28px;
+  margin-left: auto;
+  padding: 0 9px;
+  font-size: 10px;
+}
+
 .play-button {
   border-color: #414754;
   background: #242832;
   color: var(--accent);
   font-size: 13px;
+}
+
+.transport-button {
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+}
+
+.frame-button {
+  font-size: 16px;
 }
 
 .time-display {
@@ -557,8 +695,12 @@ button:disabled {
 
 .segmented-control {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 5px;
+}
+
+.words-per-line-field:disabled {
+  opacity: 0.55;
 }
 
 .segmented-control label {
@@ -790,7 +932,22 @@ progress::-moz-progress-bar {
 }
 
 .export-button {
-  min-width: 130px;
+  min-width: 90px;
+}
+
+.export-format {
+  min-width: 88px;
+  height: 36px;
+  padding: 0 9px;
+  border: 1px solid #444a57;
+  border-radius: 6px;
+  background: #222630;
+  font-size: 12px;
+}
+
+.create-video-button {
+  min-width: 145px;
+  min-height: 40px;
 }
 
 .sr-only {
@@ -801,3 +958,526 @@ progress::-moz-progress-bar {
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
 }
+
+
+/* ---------- Galeri Preset Gaya Caption ---------- */
+.preset-field {
+  margin-bottom: 1rem;
+}
+
+.preset-gallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.preset-gallery.is-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  filter: grayscale(1);
+}
+
+.preset-gallery.is-disabled .preset-item {
+  opacity: 1;
+}
+
+.preset-loading {
+  grid-column: 1 / -1;
+  color: var(--text-muted, #888);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.preset-item {
+  background: #141414;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  padding: 0.5rem;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.preset-item:hover {
+  border-color: #555;
+  transform: translateY(-1px);
+}
+
+.preset-item.active {
+  border-color: #ffdc64;
+  box-shadow: 0 0 0 2px rgba(255, 220, 100, 0.25);
+}
+
+.preset-item .preset-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #eee;
+}
+
+.preset-item .preset-category {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #888;
+}
+
+.preset-item .preset-preview {
+  background: #0a0a0a;
+  border-radius: 4px;
+  padding: 0.4rem 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-align: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+/* ---------- Compact drop-zone (baris tipis) ---------- */
+.drop-zone.compact {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed #333;
+  border-radius: 8px;
+  background: #141414;
+  min-height: auto;
+}
+
+.drop-zone.compact .drop-icon {
+  font-size: 1.2rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2a2a2a;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.drop-zone.compact .compact-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.drop-zone.compact .compact-info strong {
+  font-size: 0.85rem;
+  color: #eee;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drop-zone.compact .compact-info .muted {
+  font-size: 0.7rem;
+  color: #888;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.drop-zone.compact .compact-actions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+/* ---------- Layout: Pratinjau Video Besar ---------- */
+.left-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.preview-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.preview-panel .preview-stage {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ---------- Responsif: layar kecil ---------- */
+@media (max-width: 900px) {
+  .drop-zone.compact {
+    flex-wrap: wrap;
+  }
+  .drop-zone.compact .compact-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+/* ============================================================ */
+/* LAYOUT FINAL: KUNCI TINGGI & PRATINJAU BESAR                 */
+/* ============================================================ */
+
+/* 1. Kunci seluruh aplikasi agar pas satu layar, tanpa scroll */
+html, body {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+.app-shell#app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden;
+}
+
+.app-header {
+  flex-shrink: 0;
+}
+
+.task-bar {
+  flex-shrink: 0;
+}
+
+/* 2. Workspace: 2 kolom, tinggi = sisa layar */
+main.workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 1rem;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding: 1rem;
+  padding-bottom: calc(78px + 1rem);
+}
+
+/* 3. Kolom kiri: flex vertikal, tidak boleh meluber */
+.left-column {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem;
+  min-height: 0 !important;
+  overflow: hidden;
+}
+
+/* 5. Override total .drop-zone lama agar jadi BARIS TIPIS */
+.drop-zone.compact {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 0.75rem !important;
+  padding: 0.6rem 0.85rem !important;
+  border: 1px dashed #333 !important;
+  border-radius: 8px !important;
+  background: #141414 !important;
+  min-height: 0 !important;
+  height: auto !important;
+  text-align: left !important;
+}
+
+.drop-zone.compact .drop-icon {
+  font-size: 1.1rem !important;
+  width: 30px !important;
+  height: 30px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #2a2a2a !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+  margin: 0 !important;
+}
+
+.drop-zone.compact .compact-info {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.1rem !important;
+  min-width: 0 !important;
+  text-align: left !important;
+}
+
+.drop-zone.compact .compact-info strong {
+  font-size: 0.85rem !important;
+  color: #eee !important;
+  font-weight: 600 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.drop-zone.compact .compact-info .muted {
+  font-size: 0.7rem !important;
+  color: #888 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.drop-zone.compact .compact-actions {
+  display: flex !important;
+  gap: 0.4rem !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+}
+
+.drop-zone.compact .compact-actions .button {
+  padding: 0.35rem 0.75rem !important;
+  font-size: 0.8rem !important;
+}
+
+/* 6. Panel pratinjau: MENGISI SISA TINGGI */
+.left-column .preview-panel {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.left-column .preview-panel .section-heading {
+  flex-shrink: 0 !important;
+}
+
+.left-column .preview-panel .preview-stage {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.left-column .preview-panel .preview-controls {
+  flex-shrink: 0 !important;
+}
+
+/* 7. Video/audio di dalam stage: maksimalkan, jaga aspek rasio */
+.left-column .preview-panel .preview-stage video,
+.left-column .preview-panel .preview-stage audio {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
+/* 8. Kolom kanan (pengaturan): scroll sendiri, jangan ganggu kiri */
+.settings-panel {
+  overflow-y: auto !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+}
+/* ---------- Advanced Settings Accordion ---------- */
+details.advanced-settings {
+  margin-top: 1rem;
+  border: 1px solid #2a2a2a;
+  border-radius: 8px;
+  background: #141414;
+  padding: 0.25rem 0.75rem;
+}
+
+details.advanced-settings summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #ccc;
+  padding: 0.5rem 0;
+  list-style: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+details.advanced-settings summary::-webkit-details-marker {
+  display: none;
+}
+
+details.advanced-settings summary::after {
+  content: "▼";
+  font-size: 0.6rem;
+  margin-left: auto;
+  transition: transform 0.15s;
+}
+
+details.advanced-settings[open] summary::after {
+  transform: rotate(180deg);
+}
+
+details.advanced-settings .advanced-content {
+  padding: 0.5rem 0 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+/* ---------- Longgarkan jarak di bawah tombol ---------- */
+.settings-panel {
+  padding-bottom: 100px !important; /* Beri ruang ekstra di bawah */
+}
+
+/* Pastikan tombol "Buat Subtitle" punya jarak dari elemen di atasnya */
+#generate-subtitles {
+  margin-top: 1.5rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Jarak untuk teks peringatan di bawah tombol */
+.settings-disclaimer {
+  margin-bottom: 2rem !important;
+}
+
+.subtitle-actions {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 1.5rem !important;
+}
+
+.subtitle-actions #generate-subtitles {
+  margin: 0 !important;
+}
+
+.word-editor {
+  width: min(900px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 40px);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid #444a57;
+  border-radius: 12px;
+  background: #1b1f27;
+  color: #f3f4f6;
+  box-shadow: 0 24px 80px #0009;
+}
+
+.word-editor::backdrop {
+  background: #07090dcc;
+}
+
+.word-editor-content {
+  display: flex;
+  max-height: calc(100vh - 40px);
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+
+.word-editor-heading h2 {
+  margin: 2px 0 0;
+  font-size: 19px;
+}
+
+.word-editor-description {
+  margin: 0;
+  color: #aeb3be;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.word-editor-list {
+  display: grid;
+  max-height: min(52vh, 430px);
+  min-height: 100px;
+  gap: 7px;
+  overflow: auto;
+  padding: 2px 4px 2px 0;
+}
+
+.word-editor-row {
+  display: grid;
+  grid-template-columns: 82px minmax(100px, 1fr) 180px 70px;
+  align-items: center;
+  gap: 8px;
+}
+
+.word-editor-time {
+  min-width: 0;
+  padding: 0 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.word-editor-input {
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #444a57;
+  border-radius: 6px;
+  background: #222630;
+  color: #f3f4f6;
+}
+
+.word-editor-row .button {
+  min-height: 36px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
+.word-editor-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.word-editor-empty {
+  margin: 0;
+  padding: 18px 8px;
+  color: #aeb3be;
+  text-align: center;
+}
+
+@media (max-width: 680px) {
+  .word-editor-content {
+    padding: 14px;
+  }
+
+  .word-editor-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .word-editor-time {
+    justify-self: start;
+  }
+}
+/* Perbaikan: Paksa subtitle ke tengah dan batasi ukuran */
+.subtitle-layer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.subtitle-content {
+  display: inline-block !important;
+  max-width: 90% !important;
+  word-wrap: break-word !important;
+  position: relative;
+  z-index: 2;
+}
+
+.karaoke-word {
+  display: inline-block !important;
+  position: relative;
+  z-index: 3;
+}
+

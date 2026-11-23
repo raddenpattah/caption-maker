@@ -8,7 +8,7 @@ use caption_core::{
     build_burn_args, default_ffprobe_for, extract_audio, group_words, load_wav_16k_mono,
     merge_tokens_to_words, parse_ffprobe_json, parse_progress_line, percent, render_ass,
     render_ass_with_preset, setup_work_dir, AssOptions, PresetOptions, Quality, TranscribeOptions,
-    VideoGeometry, VideoInfo, WordsPerLine,
+    VideoGeometry, VideoInfo, WordsPerLine, WorkDirGuard,
 };
 use clap::{Parser, ValueEnum};
 
@@ -222,40 +222,44 @@ fn run_burn(
     info: &VideoInfo,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let out = args.burn.as_ref().ok_or("burn path wajib")?;
-    // workdir di temp
-    let nonce = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let work = std::env::temp_dir().join(format!("caption-burn-{}-{nonce}", process::id()));
-    setup_work_dir(&work, ass)?;
-    let ff_args = build_burn_args(input, &work, out, args.quality.into(), info);
-    let mut child = Command::new(&args.ffmpeg)
-        .args(&ff_args)
-        .current_dir(&work)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::inherit())
-        .spawn()?;
-    if let Some(stdout) = child.stdout.take() {
-        let reader = BufReader::new(stdout);
-        let mut last_pct: u8 = 0;
-        for line in reader.lines().map_while(Result::ok) {
-            if let Some(p) = parse_progress_line(&line) {
-                if let Some(us) = p.out_time_us {
-                    let pct = percent(us, info.duration_s);
-                    if pct > last_pct {
-                        last_pct = pct;
-                        eprintln!("progress {pct}%");
+    let mut work = WorkDirGuard::new("caption-burn")?;
+    setup_work_dir(work.path(), ass)?;
+    let result: Result<(), Box<dyn std::error::Error>> = (|| {
+        let ff_args = build_burn_args(input, work.path(), out, args.quality.into(), info);
+        let mut child = Command::new(&args.ffmpeg)
+            .args(&ff_args)
+            .current_dir(work.path())
+            .stdout(Stdio::piped())
+            .stderr(Stdio::inherit())
+            .spawn()?;
+        if let Some(stdout) = child.stdout.take() {
+            let reader = BufReader::new(stdout);
+            let mut last_pct: u8 = 0;
+            for line in reader.lines().map_while(Result::ok) {
+                if let Some(p) = parse_progress_line(&line) {
+                    if let Some(us) = p.out_time_us {
+                        let pct = percent(us, info.duration_s);
+                        if pct > last_pct {
+                            last_pct = pct;
+                            eprintln!("progress {pct}%");
+                        }
                     }
                 }
             }
         }
+        let status = child.wait()?;
+        if !status.success() {
+            return Err(format!("ffmpeg burn-in gagal: {status}").into());
+        }
+        Ok(())
+    })();
+    let cleanup = work.cleanup();
+    match (result, cleanup) {
+        (Ok(()), Ok(())) => {}
+        (Err(error), Ok(())) => return Err(error),
+        (Ok(()), Err(cleanup_error)) => return Err(cleanup_error.into()),
+        (Err(error), Err(cleanup_error)) => return Err(format!("{error}; {cleanup_error}").into()),
     }
-    let status = child.wait()?;
-    if !status.success() {
-        return Err(format!("ffmpeg burn-in gagal: {status}").into());
-    }
-    let _ = fs::remove_dir_all(&work);
     println!("burn output={}", out.display());
     Ok(())
 }
@@ -277,36 +281,41 @@ fn render_frame(
         geometry,
         &PresetOptions::default(),
     );
-    let nonce = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_nanos();
-    let work = std::env::temp_dir().join(format!("caption-frame-{}-{nonce}", process::id()));
-    setup_work_dir(&work, &ass)?;
+    let mut work = WorkDirGuard::new("caption-frame")?;
+    setup_work_dir(work.path(), &ass)?;
     let secs = at_ms as f64 / 1000.0;
     let color = format!("color=c=0x202020:s={}x{}", geometry.width, geometry.height);
-    let status = Command::new(&args.ffmpeg)
-        .current_dir(&work)
-        .args([
-            "-y",
-            "-f",
-            "lavfi",
-            "-i",
-            &color,
-            "-vf",
-            "ass=sub.ass:fontsdir=fonts",
-            "-frames:v",
-            "1",
-            "-ss",
-            &secs.to_string(),
-            out.to_str().ok_or("render-frame path bukan UTF-8")?,
-        ])
-        .stdout(Stdio::null())
-        .stderr(Stdio::inherit())
-        .status()?;
-    let _ = fs::remove_dir_all(&work);
-    if !status.success() {
-        return Err(format!("ffmpeg render-frame gagal: {status}").into());
+    let result: Result<(), Box<dyn std::error::Error>> = (|| {
+        let status = Command::new(&args.ffmpeg)
+            .current_dir(work.path())
+            .args([
+                "-y",
+                "-f",
+                "lavfi",
+                "-i",
+                &color,
+                "-vf",
+                "ass=sub.ass:fontsdir=fonts",
+                "-frames:v",
+                "1",
+                "-ss",
+                &secs.to_string(),
+                out.to_str().ok_or("render-frame path bukan UTF-8")?,
+            ])
+            .stdout(Stdio::null())
+            .stderr(Stdio::inherit())
+            .status()?;
+        if !status.success() {
+            return Err(format!("ffmpeg render-frame gagal: {status}").into());
+        }
+        Ok(())
+    })();
+    let cleanup = work.cleanup();
+    match (result, cleanup) {
+        (Ok(()), Ok(())) => {}
+        (Err(error), Ok(())) => return Err(error),
+        (Ok(()), Err(cleanup_error)) => return Err(cleanup_error.into()),
+        (Err(error), Err(cleanup_error)) => return Err(format!("{error}; {cleanup_error}").into()),
     }
     println!("frame output={}", out.display());
     Ok(())
