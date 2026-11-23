@@ -1469,7 +1469,7 @@ details.advanced-settings .advanced-content {
 
 .subtitle-content {
   display: inline-block !important;
-  max-width: 90% !important;
+  max-width: 100% !important;
   word-wrap: break-word !important;
   position: relative;
   z-index: 2;
