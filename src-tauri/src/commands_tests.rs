@@ -147,10 +147,10 @@ fn transcribe_manager_rejects_parallel_transcriptions() {
 #[test]
 fn burn_manager_releases_lease_after_error() {
     let manager = BurnManager::default();
-    let result: Result<(), &str> = (|| {
+    let result: Result<(), &str> = {
         let _lease = manager.reserve().unwrap();
         Err("simulated burn failure")
-    })();
+    };
 
     assert_eq!(result, Err("simulated burn failure"));
     assert!(manager.reserve().is_ok());
