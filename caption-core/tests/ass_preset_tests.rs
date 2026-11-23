@@ -201,6 +201,10 @@ fn glow_adds_lower_layer_events() {
     let p = find_preset("baris-neon-mint").unwrap();
     let ass = render_ass_with_preset(&words_3(), &p, portrait(), &PresetOptions::default());
     let events = dialogue_lines(&ass);
+    let glow_event = events
+        .iter()
+        .find(|e| e.starts_with("Dialogue: 0,"))
+        .unwrap();
     let layer0 = events
         .iter()
         .filter(|e| e.starts_with("Dialogue: 0,"))
@@ -211,6 +215,24 @@ fn glow_adds_lower_layer_events() {
         .count();
     assert_eq!(layer0, 1, "glow = 1 event layer 0");
     assert_eq!(layer1, 1, "teks utama = 1 event layer 1");
+    assert!(glow_event.contains("\\bord12\\blur12"));
+    assert!(glow_event.contains("\\c&H00C0FF5C&\\3c&H00C0FF5C&"));
+}
+
+#[test]
+fn glow_radius_scales_for_720x1280_and_sets_secondary_color() {
+    let p = find_preset("baris-neon-mint").unwrap();
+    let ass = render_ass_with_preset(&words_3(), &p, small_portrait(), &PresetOptions::default());
+    let glow_event = dialogue_lines(&ass)
+        .into_iter()
+        .find(|line| line.starts_with("Dialogue: 0,"))
+        .unwrap();
+
+    assert!(glow_event.contains("\\bord8\\blur8"), "{glow_event}");
+    assert!(
+        glow_event.contains("\\c&H00C0FF5C&\\3c&H00C0FF5C&"),
+        "{glow_event}"
+    );
 }
 
 #[test]

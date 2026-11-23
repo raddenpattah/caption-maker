@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { getVideoRect, groupWords, loadPreviewFont } from "../js/preview.js";
+import {
+  computePreviewMetrics,
+  getVideoRect,
+  groupWords,
+  loadPreviewFont,
+} from "../js/preview.js";
 
 const words = ["satu", "dua", "tiga", "empat", "lima"].map((text, index) => ({
   text,
@@ -121,4 +126,84 @@ test("memuat preset font dan memeriksa semua family sebelum menyelesaikan", asyn
       globalThis.document = originalDocument;
     }
   }
+});
+
+const metricPreset = {
+  font: { size: 72, letter_spacing: 2 },
+  outline: 6,
+  shadow: 3,
+  box: { padding: 18 },
+  margin_v: 450,
+  margin_lr: 80,
+  glow: { radius: 12 },
+};
+
+test("menghitung preview metrics pada geometri 1080x1920", () => {
+  const metrics = computePreviewMetrics({
+    rect: { scale: 0.5, height: 960 },
+    videoWidth: 1080,
+    videoHeight: 1920,
+    preset: metricPreset,
+  });
+
+  assert.equal(metrics.assScale, 1);
+  assert.equal(metrics.previewScale, 0.5);
+  assert.equal(metrics.fontSize, 36);
+  assert.equal(metrics.outline, 3);
+  assert.equal(metrics.shadow, 1.5);
+  assert.equal(metrics.letterSpacing, 1);
+  assert.equal(metrics.boxPadding, 9);
+  assert.equal(metrics.marginLr, 40);
+  assert.equal(metrics.marginV, 225);
+  assert.equal(metrics.glowRadius, 6);
+});
+
+test("memakai ukuran referensi portrait untuk mode audio", () => {
+  const metrics = computePreviewMetrics({
+    rect: { scale: 0.5, height: 960 },
+    videoWidth: 0,
+    videoHeight: 0,
+    preset: metricPreset,
+  });
+
+  assert.equal(metrics.assScale, 1);
+  assert.equal(metrics.previewScale, 0.5);
+  assert.equal(metrics.marginV, 225);
+});
+
+test("menghitung assScale 0.6667 pada video 720x1280", () => {
+  const metrics = computePreviewMetrics({
+    rect: { scale: 0.5, height: 640 },
+    videoWidth: 720,
+    videoHeight: 1280,
+    preset: metricPreset,
+  });
+
+  assert.ok(Math.abs(metrics.assScale - 0.6667) < 0.0001);
+  assert.ok(Math.abs(metrics.previewScale - (0.5 * (720 / 1080))) < 0.0001);
+  assert.ok(Math.abs(metrics.marginV - 150) < 0.0001);
+});
+
+test("marginV landscape memakai 8 persen tinggi rect", () => {
+  const metrics = computePreviewMetrics({
+    rect: { scale: 0.5, height: 540 },
+    videoWidth: 1920,
+    videoHeight: 1080,
+    preset: metricPreset,
+  });
+
+  assert.equal(metrics.assScale, 1);
+  assert.equal(metrics.marginV, 540 * 0.08);
+});
+
+test("video persegi memakai aturan marginV landscape", () => {
+  const metrics = computePreviewMetrics({
+    rect: { scale: 0.5, height: 400 },
+    videoWidth: 1080,
+    videoHeight: 1080,
+    preset: metricPreset,
+  });
+
+  assert.equal(metrics.assScale, 1);
+  assert.equal(metrics.marginV, 400 * 0.08);
 });

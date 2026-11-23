@@ -64,6 +64,41 @@ export function getVideoRect(stage, video) {
   };
 }
 
+export function computePreviewMetrics({ rect, videoWidth, videoHeight, preset, settings = {} }) {
+  const hasVideoDimensions =
+    Number.isFinite(videoWidth) &&
+    videoWidth > 0 &&
+    Number.isFinite(videoHeight) &&
+    videoHeight > 0;
+  const vw = hasVideoDimensions ? videoWidth : 1080;
+  const vh = hasVideoDimensions ? videoHeight : 1920;
+  const assScale = Math.min(vw, vh) / 1080;
+  const previewScale = rect.scale * assScale;
+
+  const rawFontSize = Number(preset.font?.size ?? settings.fontSize);
+  const fontSize = Number.isFinite(rawFontSize) && rawFontSize > 0 ? rawFontSize : 20;
+  const rawOutline = Number(preset.outline ?? settings.outline);
+  const outline = Number.isFinite(rawOutline) && rawOutline >= 0 ? rawOutline : 0;
+  const rawShadow = Number(preset.shadow ?? settings.shadow);
+  const shadow = Number.isFinite(rawShadow) && rawShadow > 0 ? rawShadow * previewScale : 0;
+
+  return {
+    assScale,
+    previewScale,
+    fontSize: fontSize * previewScale,
+    outline: outline * previewScale,
+    shadow,
+    letterSpacing: Number(preset.font?.letter_spacing ?? 0) * previewScale,
+    boxPadding: Number(preset.box?.padding ?? 0) * previewScale,
+    marginLr: Number(preset.margin_lr ?? 0) * previewScale,
+    marginV:
+      vh > vw
+        ? Number(preset.margin_v ?? 0) * previewScale
+        : rect.height * 0.08,
+    glowRadius: Number(preset.glow?.radius ?? 0) * previewScale,
+  };
+}
+
 export function groupWords(words, n) {
   if (![1, 2, 3, "sentence"].includes(n)) {
     throw new RangeError("Jumlah kata per baris harus 1, 2, 3, atau sentence.");
@@ -110,28 +145,13 @@ export function renderPreview(container, words, currentMs, settings) {
   const video = document.getElementById('video-player');
   const activeVideo = video && !video.hidden ? video : null;
   const videoRect = getVideoRect(stage, activeVideo);
-  const scale = videoRect.scale;
-  const marginV = (preset.margin_v ?? 0) * scale;
-  const marginLr = (preset.margin_lr ?? 0) * scale;
-
-  const rawFontSize = Number(font?.size ?? settings.fontSize);
-  const baseFontSize = Number.isFinite(rawFontSize) && rawFontSize > 0 ? rawFontSize : 20;
-  const scaledFontSize = Math.max(12, baseFontSize * scale);
-
-  console.log("renderPreview geometry", {
-    videoWidth: activeVideo?.videoWidth ?? 0,
-    videoHeight: activeVideo?.videoHeight ?? 0,
-    stageClientWidth: stage.clientWidth,
-    stageClientHeight: stage.clientHeight,
-    scale,
-    scaledFontSize,
+  const metrics = computePreviewMetrics({
+    rect: videoRect,
+    videoWidth: activeVideo?.videoWidth,
+    videoHeight: activeVideo?.videoHeight,
+    preset,
+    settings,
   });
-
-  const rawOutline = Number(preset.outline ?? settings.outline);
-  const validOutline = Number.isFinite(rawOutline) && rawOutline >= 0 ? rawOutline : 0;
-  const scaledOutline = Math.max(0, validOutline * scale);
-
-  const shadow = preset.shadow ?? settings.shadow;
 
   // --- Ukuran dan posisi area video ---
   container.style.position = "absolute";
@@ -147,24 +167,24 @@ export function renderPreview(container, words, currentMs, settings) {
   container.style.justifyContent = "center";
   container.style.alignItems = "flex-end";
   container.style.textAlign = "center";
-  container.style.padding = `0 ${marginLr}px ${marginV}px`;
+  container.style.padding = `0 ${metrics.marginLr}px ${metrics.marginV}px`;
   container.style.pointerEvents = "none";
   container.style.zIndex = "10";
 
   // --- Font & Warna Dasar ---
   container.style.fontFamily = font ? `"${font.family}", Arial, sans-serif` : settings.font;
-  container.style.fontSize = `${scaledFontSize}px`;
+  container.style.fontSize = `${metrics.fontSize}px`;
   container.style.fontWeight = font ? (font.bold ? "700" : "400") : "";
   container.style.fontStyle = font ? (font.italic ? "italic" : "normal") : "";
-  container.style.letterSpacing = font ? `${(font.letter_spacing || 0) * scale}px` : "";
+  container.style.letterSpacing = font ? `${metrics.letterSpacing}px` : "";
   container.style.color = preset.colors?.text ?? textColor;
   container.style.textTransform = font?.uppercase ? "uppercase" : "none";
 
   // --- Outline & Glow (Hanya jika tidak ada kotak) ---
   if (!hasBox) {
-    container.style.webkitTextStroke = `${scaledOutline}px ${preset.colors?.outline ?? outlineColor}`;
-    if (glow) { container.style.textShadow = `0 0 ${Math.max(4, glow.radius * scale)}px ${glow.color}`; } else if (shadow > 0) {
-      container.style.textShadow = `0 ${shadow * scale}px ${shadow * 2 * scale}px ${shadowColor}`;
+    container.style.webkitTextStroke = `${metrics.outline}px ${preset.colors?.outline ?? outlineColor}`;
+    if (glow) { container.style.textShadow = `0 0 ${metrics.glowRadius}px ${glow.color}`; } else if (metrics.shadow > 0) {
+      container.style.textShadow = `0 ${metrics.shadow}px ${metrics.shadow * 2}px ${shadowColor}`;
     } else {
       container.style.textShadow = "none";
     }
@@ -207,7 +227,7 @@ export function renderPreview(container, words, currentMs, settings) {
 
   if (hasBox) {
     content.style.backgroundColor = preset.box.color;
-    content.style.padding = `${(preset.box.padding ?? 0) * scale}px`;
+    content.style.padding = `${metrics.boxPadding}px`;
     content.style.borderRadius = "0";
   }
 

@@ -195,7 +195,7 @@ pub fn render_ass_with_preset(
         match preset.emphasis {
             Emphasis::None | Emphasis::Fill => {
                 if glow_layer {
-                    render_glow_events(&mut out, preset, group);
+                    render_glow_events(&mut out, preset, group, &geometry);
                 }
                 let text = match preset.emphasis {
                     Emphasis::Fill => build_fill_text(preset, group, &geometry),
@@ -217,7 +217,7 @@ pub fn render_ass_with_preset(
                         group.words.last().unwrap().end_ms
                     };
                     if glow_layer {
-                        render_glow_single(&mut out, preset, group, start, end);
+                        render_glow_single(&mut out, preset, group, start, end, &geometry);
                     }
                     let text = build_group_text(preset, group, Some(i));
                     out.push_str(&format!(
@@ -260,26 +260,37 @@ fn build_fill_text(preset: &StylePreset, group: &Group, _geom: &VideoGeometry) -
     out.trim_end().to_owned()
 }
 
-fn render_glow_events(out: &mut String, preset: &StylePreset, group: &Group) {
+fn render_glow_events(
+    out: &mut String,
+    preset: &StylePreset,
+    group: &Group,
+    geometry: &VideoGeometry,
+) {
     let g = preset.glow.as_ref().unwrap();
-    let scale = 1.0_f64; // glow radius sudah dalam px preset
     let c = ass_color_from_hex(&g.color).unwrap_or("&H00000000&".into());
-    let r = (f64::from(g.radius) * scale).round() as u32;
+    let r = (f64::from(g.radius) * geometry.scale()).round() as u32;
     let text = build_group_text(preset, group, None);
     out.push_str(&format!(
-        "Dialogue: 0,{},{},Default,,0,0,0,,{{\\bord{r}\\blur{r}\\c{c}}}{text}\n",
+        "Dialogue: 0,{},{},Default,,0,0,0,,{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
         timestamp(group.start_ms()),
         timestamp(group.end_ms()),
     ));
 }
 
-fn render_glow_single(out: &mut String, preset: &StylePreset, group: &Group, start: u32, end: u32) {
+fn render_glow_single(
+    out: &mut String,
+    preset: &StylePreset,
+    group: &Group,
+    start: u32,
+    end: u32,
+    geometry: &VideoGeometry,
+) {
     let g = preset.glow.as_ref().unwrap();
     let c = ass_color_from_hex(&g.color).unwrap_or("&H00000000&".into());
-    let r = g.radius;
+    let r = (f64::from(g.radius) * geometry.scale()).round() as u32;
     let text = build_group_text(preset, group, None);
     out.push_str(&format!(
-        "Dialogue: 0,{},{},Default,,0,0,0,,{{\\bord{r}\\blur{r}\\c{c}}}{text}\n",
+        "Dialogue: 0,{},{},Default,,0,0,0,,{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
         timestamp(start),
         timestamp(end),
     ));
