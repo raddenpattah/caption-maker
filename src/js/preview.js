@@ -184,7 +184,7 @@ export function renderPreview(container, words, currentMs, settings) {
   if (!hasBox) {
     container.style.webkitTextStroke = `${metrics.outline}px ${preset.colors?.outline ?? outlineColor}`;
     if (glow) { container.style.textShadow = `0 0 ${metrics.glowRadius}px ${glow.color}`; } else if (metrics.shadow > 0) {
-      container.style.textShadow = `0 ${metrics.shadow}px ${metrics.shadow * 2}px ${shadowColor}`;
+      container.style.textShadow = `${metrics.shadow}px ${metrics.shadow}px 0 ${shadowColor}`;
     } else {
       container.style.textShadow = "none";
     }
