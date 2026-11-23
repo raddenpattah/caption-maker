@@ -182,7 +182,8 @@ export function renderPreview(container, words, currentMs, settings) {
 
   // --- Outline & Glow (Hanya jika tidak ada kotak) ---
   if (!hasBox) {
-    container.style.webkitTextStroke = `${metrics.outline}px ${preset.colors?.outline ?? outlineColor}`;
+    container.style.webkitTextStroke = `${metrics.outline * 2}px ${preset.colors?.outline ?? outlineColor}`;
+    container.style.paintOrder = "stroke fill";
     if (glow) { container.style.textShadow = `0 0 ${metrics.glowRadius}px ${glow.color}`; } else if (metrics.shadow > 0) {
       container.style.textShadow = `${metrics.shadow}px ${metrics.shadow}px 0 ${shadowColor}`;
     } else {
@@ -190,6 +191,7 @@ export function renderPreview(container, words, currentMs, settings) {
     }
   } else {
     container.style.webkitTextStroke = "0px";
+    container.style.paintOrder = "normal";
     container.style.textShadow = "none";
   }
 
