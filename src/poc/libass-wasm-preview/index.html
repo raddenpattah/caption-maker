@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <title>POC Preview ASS — Caption Maker</title>
+    <link rel="stylesheet" href="./poc.css" />
+  </head>
+  <body>
+    <main class="poc-shell">
+      <header class="poc-header">
+        <div>
+          <p class="eyebrow">POC TERISOLASI</p>
+          <h1>Preview ASS dengan libass WASM</h1>
+        </div>
+        <a href="../../index.html">Kembali ke Caption Maker</a>
+      </header>
+
+      <p class="poc-note">
+        Halaman ini tidak mengubah preview CSS. Di aplikasi Tauri, ASS diminta dari backend;
+        di browser biasa, halaman memakai fixture lokal.
+      </p>
+
+      <section class="poc-workspace" aria-label="Preview eksperimental ASS">
+        <div class="poc-controls">
+          <button id="render-ass" type="button">Render ASS</button>
+          <label for="render-time">Waktu render: <output id="render-time-label">0.8 s</output></label>
+          <input id="render-time" type="range" min="0" max="4" step="0.05" value="0.8" />
+          <p id="render-status" role="status" aria-live="polite">Belum dirender.</p>
+          <p class="poc-detail">
+            Canvas 1080×1920; font Poppins ExtraBold dimuat dari aset lokal aplikasi.
+          </p>
+        </div>
+
+        <div class="poc-frame" aria-label="Canvas preview subtitle ASS">
+          <canvas id="ass-canvas" width="1080" height="1920">
+            Browser ini tidak mendukung canvas.
+          </canvas>
+        </div>
+      </section>
+    </main>
+
+    <script src="./vendor/jellyfin-4.2.4/subtitles-octopus.js"></script>
+    <script type="module" src="./poc.js"></script>
+  </body>
+</html>

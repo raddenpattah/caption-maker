@@ -1,0 +1,137 @@
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", sans-serif;
+  background: #14161b;
+  color: #f3f4f6;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+.poc-shell {
+  width: min(940px, calc(100% - 32px));
+  margin: 28px auto;
+}
+
+.poc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.poc-header h1 {
+  margin: 4px 0 0;
+  font-size: clamp(20px, 4vw, 28px);
+}
+
+.poc-header a {
+  color: #f1ce7b;
+}
+
+.eyebrow {
+  margin: 0;
+  color: #f1ce7b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.poc-note {
+  max-width: 700px;
+  color: #b8bdc8;
+  line-height: 1.5;
+}
+
+.poc-workspace {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 320px);
+  align-items: start;
+  gap: 24px;
+  padding: 18px;
+  border: 1px solid #343943;
+  border-radius: 10px;
+  background: #1c1f26;
+}
+
+.poc-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.poc-controls button {
+  min-height: 38px;
+  border: 1px solid #d5b86d;
+  border-radius: 7px;
+  background: #e2c47d;
+  color: #211d15;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.poc-controls button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.poc-controls label {
+  color: #d7dbe3;
+  font-size: 13px;
+}
+
+.poc-controls input {
+  width: 100%;
+}
+
+#render-status {
+  min-height: 42px;
+  margin: 0;
+  color: #d7dbe3;
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.poc-detail {
+  margin: 0;
+  color: #9299a7;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.poc-frame {
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  overflow: hidden;
+  border: 1px solid #4a4e58;
+  border-radius: 6px;
+  background: #08090b;
+}
+
+#ass-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 620px) {
+  .poc-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .poc-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .poc-frame {
+    width: min(100%, 300px);
+    justify-self: center;
+  }
+}
