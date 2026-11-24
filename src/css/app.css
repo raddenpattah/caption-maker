@@ -60,7 +60,8 @@ body {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -1356,108 +1357,182 @@ details.advanced-settings .advanced-content {
   margin: 0 !important;
 }
 
-.word-editor {
-  width: min(900px, calc(100vw - 32px));
-  max-width: calc(100vw - 32px);
-  max-height: calc(100vh - 40px);
-  padding: 0;
-  overflow: hidden;
-  border: 1px solid #444a57;
-  border-radius: 12px;
-  background: #1b1f27;
-  color: #f3f4f6;
-  box-shadow: 0 24px 80px #0009;
+.settings-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
 }
 
-.word-editor::backdrop {
-  background: #07090dcc;
+.settings-tab {
+  min-height: 36px;
+  border: 1px solid #414754;
+  border-radius: 6px;
+  background: #222630;
+  color: #cdd1d9;
+  cursor: pointer;
+  font-size: 12px;
 }
 
-.word-editor-content {
+.settings-tab.is-active {
+  border-color: #ad9053;
+  background: #383124;
+  color: #ffdc94;
+}
+
+.settings-tab-panel {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.settings-tab-panel[hidden] {
+  display: none !important;
+}
+
+.settings-panel[data-active-tab="text"] {
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden !important;
+  padding-bottom: 20px !important;
+}
+
+.text-editor-panel {
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.editor-toolbar {
+  display: grid;
+  gap: 9px;
+}
+
+.editor-mode-control {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.editor-mode-button {
+  min-width: 0;
+  min-height: 32px;
+  padding: 0 3px;
+  border: 1px solid #414754;
+  border-radius: 5px;
+  background: #222630;
+  color: #cdd1d9;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.editor-mode-button.is-active {
+  border-color: #ad9053;
+  background: #383124;
+  color: #ffdc94;
+}
+
+.editor-follow-control {
   display: flex;
-  max-height: calc(100vh - 40px);
-  flex-direction: column;
-  gap: 12px;
-  padding: 20px;
-}
-
-.word-editor-heading h2 {
-  margin: 2px 0 0;
-  font-size: 19px;
+  align-items: center;
+  gap: 7px;
+  color: #cdd1d9;
+  font-size: 11px;
 }
 
 .word-editor-description {
   margin: 0;
   color: #aeb3be;
-  font-size: 12px;
+  font-size: 10px;
   line-height: 1.5;
 }
 
 .word-editor-list {
   display: grid;
-  max-height: min(52vh, 430px);
-  min-height: 100px;
-  gap: 7px;
+  min-height: 0;
+  align-content: start;
+  gap: 8px;
   overflow: auto;
-  padding: 2px 4px 2px 0;
+  overscroll-behavior: contain;
+  padding: 2px 4px 4px 0;
+}
+
+.word-editor-list[hidden] {
+  display: none !important;
 }
 
 .word-editor-row {
   display: grid;
-  grid-template-columns: 82px minmax(100px, 1fr) 180px 70px;
-  align-items: center;
-  gap: 8px;
+  min-width: 0;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #343a46;
+  border-radius: 7px;
+  background: #20242d;
 }
 
-.word-editor-time {
+.word-editor-row.is-active {
+  border-color: #ad9053;
+  background: #302b22;
+}
+
+.word-editor-row-heading,
+.word-editor-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.word-editor-row-heading {
+  justify-content: space-between;
+}
+
+.word-editor-time,
+.word-editor-play {
   min-width: 0;
-  padding: 0 5px;
+  min-height: 30px;
+  padding: 0 7px;
   font-variant-numeric: tabular-nums;
+  font-size: 10px;
 }
 
 .word-editor-input {
   width: 100%;
   min-width: 0;
-  height: 36px;
-  padding: 0 10px;
+  min-height: 36px;
+  padding: 8px;
   border: 1px solid #444a57;
   border-radius: 6px;
   background: #222630;
   color: #f3f4f6;
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  resize: none;
 }
 
-.word-editor-row .button {
-  min-height: 36px;
-  padding: 0 8px;
-  font-size: 11px;
+.word-editor-input:read-only {
+  opacity: 0.65;
 }
 
-.word-editor-actions {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  padding-top: 4px;
+.word-editor-row-actions .button {
+  min-height: 30px;
+  padding: 4px 7px;
+  font-size: 10px;
 }
 
 .word-editor-empty {
   margin: 0;
-  padding: 18px 8px;
+  padding: 12px 8px;
   color: #aeb3be;
   text-align: center;
 }
 
-@media (max-width: 680px) {
-  .word-editor-content {
-    padding: 14px;
-  }
-
-  .word-editor-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .word-editor-time {
-    justify-self: start;
-  }
+.reset-original-words {
+  justify-self: start;
+  min-height: 32px;
+  padding: 0 9px;
+  font-size: 10px;
 }
 /* Perbaikan: Paksa subtitle ke tengah dan batasi ukuran */
 .subtitle-layer {
@@ -1479,5 +1554,18 @@ details.advanced-settings .advanced-content {
   display: inline-block !important;
   position: relative;
   z-index: 3;
+}
+
+.subtitle-content.is-draggable {
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+}
+
+.preview-stage.is-caption-dragging,
+.preview-stage.is-caption-dragging .subtitle-content {
+  cursor: grabbing;
+  user-select: none;
+  -webkit-user-select: none;
 }
 

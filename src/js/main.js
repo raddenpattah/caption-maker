@@ -10,10 +10,26 @@ import {
   pickInputFile,
   transcribe,
 } from "./api.js";
-import { loadPreviewFont, renderPreview } from "./preview.js";
+import {
+  applyCaptionPosition,
+  clampCaptionPosition,
+  computePreviewMetrics,
+  getCaptionPosition,
+  getCaptionVisualOutset,
+  getVideoRect,
+  groupWords,
+  loadPreviewFont,
+  moveCaptionPosition,
+  renderPreview,
+} from "./preview.js";
 import { createState } from "./state.js";
 import { isTauri } from "./tauri-bridge.js";
-import { deleteWord, editWord, mergeWithNext, resetWords } from "./wordEdit.js";
+import {
+  applyGroupText,
+  deleteWord,
+  mergeWithNext,
+  resetWords,
+} from "./wordEdit.js";
 
 function updateStageAspectRatio(videoElement) {
   const stage = document.getElementById("preview-stage");
@@ -32,7 +48,9 @@ const state = createState();
 const byId = (id) => document.getElementById(id);
 const video = byId("video-player");
 const audio = byId("audio-player");
+const previewStage = byId("preview-stage");
 const previewSubtitle = byId("preview-subtitle");
+const wordEditorList = byId("word-editor-list");
 const progressBar = byId("progress-bar");
 const supportedExtensions = new Set(["mp4", "mkv", "mov", "mp3", "wav", "m4a"]);
 let activeObjectUrl = null;
@@ -54,6 +72,12 @@ let previewStageResizeObserver = null;
 let loadedPreviewFontKey = null;
 let pendingPreviewFontKey = null;
 let pendingPreviewFont = null;
+let editorMode = "1";
+let editorNeedsRender = false;
+let editorNeedsRenderWordIndex = null;
+let rowPlayback = null;
+const captionPositions = new Map();
+let captionDrag = null;
 
 function formatTime(milliseconds) {
   const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
@@ -105,6 +129,7 @@ function clearGeneratedWords(message) {
   }
   state.update({ words: [], originalWords: null, edited: false, generated: false});
   renderPreviewText();
+  renderWordEditor();
   updatePreviewTag();
   setProgress(message, 0);
   updateAvailability();
@@ -240,7 +265,9 @@ function renderPreviewText() {
     ...settings,
     preset,
     wordsPerLine: effectiveWordsPerLine(),
+    captionPosition: preset ? captionPositions.get(preset.id) ?? null : null,
   });
+  if (hasActiveGroup && preset) syncRenderedCaptionPosition(preset, settings);
   if (!hasActiveGroup) {
     const placeholder = document.createElement("span");
     placeholder.className = "preview-placeholder";
@@ -248,6 +275,112 @@ function renderPreviewText() {
       ? "Putar atau geser waktu untuk melihat subtitle"
       : "Pratinjau subtitle akan tampil di sini";
     previewSubtitle.append(placeholder);
+  }
+}
+
+function getPreviewVideoBounds() {
+  const { left, top, width, height } = previewSubtitle.getBoundingClientRect();
+  return { left, top, width, height };
+}
+
+function getCaptionMetrics(preset, settings) {
+  const activeVideo = video && !video.hidden ? video : null;
+  const videoRect = getVideoRect(previewStage, activeVideo);
+  return computePreviewMetrics({
+    rect: videoRect,
+    videoWidth: activeVideo?.videoWidth,
+    videoHeight: activeVideo?.videoHeight,
+    preset,
+    settings,
+  });
+}
+
+function syncRenderedCaptionPosition(preset, settings) {
+  const content = previewSubtitle.querySelector(".subtitle-content");
+  if (!content) return;
+
+  const videoRect = getPreviewVideoBounds();
+  const blockRect = content.getBoundingClientRect();
+  const savedPosition = captionPositions.get(preset.id);
+  const position = clampCaptionPosition(
+    savedPosition ?? getCaptionPosition(videoRect, blockRect),
+    videoRect,
+    blockRect,
+    getCaptionVisualOutset(getCaptionMetrics(preset, settings)),
+  );
+  captionPositions.set(preset.id, position);
+  applyCaptionPosition(content, position);
+}
+
+function beginCaptionDrag(event) {
+  if (
+    event.button !== 0 ||
+    !event.isPrimary ||
+    burnedPreviewActive ||
+    !selectedPresetId
+  ) {
+    return;
+  }
+  const content = event.target.closest?.("#preview-subtitle .subtitle-content");
+  if (!content || !previewSubtitle.contains(content)) return;
+
+  const preset = selectedPreset();
+  if (!preset) return;
+  const bounds = getPreviewVideoBounds();
+  const blockRect = content.getBoundingClientRect();
+  const position = captionPositions.get(preset.id) ??
+    clampCaptionPosition(
+      getCaptionPosition(bounds, blockRect),
+      bounds,
+      blockRect,
+      getCaptionVisualOutset(getCaptionMetrics(preset, state.get().settings)),
+    );
+  captionPositions.set(preset.id, position);
+  captionDrag = {
+    pointerId: event.pointerId,
+    presetId: preset.id,
+    startX: event.clientX,
+    startY: event.clientY,
+    startPosition: position,
+    dragging: false,
+  };
+  event.preventDefault();
+  previewStage.setPointerCapture(event.pointerId);
+}
+
+function moveCaptionDrag(event) {
+  if (!captionDrag || event.pointerId !== captionDrag.pointerId) return;
+  const deltaX = event.clientX - captionDrag.startX;
+  const deltaY = event.clientY - captionDrag.startY;
+  if (!captionDrag.dragging && Math.hypot(deltaX, deltaY) < 4) return;
+
+  captionDrag.dragging = true;
+  previewStage.classList.add("is-caption-dragging");
+  const preset = presetCache.find((item) => item.id === captionDrag.presetId);
+  const content = previewSubtitle.querySelector(".subtitle-content");
+  if (!preset || !content) return;
+
+  const videoRect = getPreviewVideoBounds();
+  const position = moveCaptionPosition(
+    captionDrag.startPosition,
+    deltaX,
+    deltaY,
+    videoRect,
+    content.getBoundingClientRect(),
+    getCaptionVisualOutset(getCaptionMetrics(preset, state.get().settings)),
+  );
+  captionPositions.set(preset.id, position);
+  applyCaptionPosition(content, position);
+  event.preventDefault();
+}
+
+function endCaptionDrag(event) {
+  if (!captionDrag || (event && event.pointerId !== captionDrag.pointerId)) return;
+  const { pointerId } = captionDrag;
+  captionDrag = null;
+  previewStage.classList.remove("is-caption-dragging");
+  if (previewStage.hasPointerCapture(pointerId)) {
+    previewStage.releasePointerCapture(pointerId);
   }
 }
 
@@ -265,6 +398,7 @@ function updateClock(milliseconds) {
   byId("total-time").textContent = formatTime(durationMs);
   byId("seek-slider").value = String(Math.min(milliseconds, durationMs) / 1000);
   if (!burnedPreviewActive) renderPreviewText();
+  updateEditorPlayback(milliseconds);
 }
 
 function updatePlayButton(playing) {
@@ -278,6 +412,7 @@ function seekActiveMedia(offsetSeconds) {
   const element = currentMediaElement();
   if (!element || element.readyState < 1 || !Number.isFinite(element.currentTime)) return;
 
+  stopRowPlayback();
   const duration = Number.isFinite(element.duration) ? element.duration : Number.POSITIVE_INFINITY;
   const nextTime = Math.max(0, Math.min(duration, element.currentTime + offsetSeconds));
   element.currentTime = nextTime;
@@ -312,8 +447,7 @@ function updateAvailability() {
     !modelInstalled ||
     busy;
   byId("edit-text").disabled = !words.length || busy;
-  byId("reset-original-words").disabled =
-    !state.get().originalWords || !state.get().edited;
+  updateEditorAvailability(busy, mediaReady);
   byId("cancel-task").disabled = burnActive
     ? burnCancelRequested || burnProgressStatus !== "running"
     : subtitleTaskActive
@@ -527,6 +661,7 @@ async function loadLocalFile(fileOrPath) {
   updatePlayButton(false);
   updateAvailability();
   renderPreviewText();
+  renderWordEditor();
   resetProgress(
     isTauri()
       ? "Media lokal siap — buat subtitle untuk mulai mentranskripsi."
@@ -536,6 +671,7 @@ async function loadLocalFile(fileOrPath) {
 
 function clearMedia() {
   if (taskBusy()) return;
+  stopRowPlayback();
   pauseInternalTimer();
   video.pause();
   audio.pause();
@@ -572,6 +708,7 @@ function clearMedia() {
   updatePlayButton(false);
   updateAvailability();
   updateClock(0);
+  renderWordEditor();
   resetProgress();
 }
 
@@ -681,6 +818,7 @@ async function generateSubtitles() {
   }
 
   const controller = new AbortController();
+  stopRowPlayback();
   state.update({ controller, originalWords: null });
   transcribeCancelRequested = false;
   transcribeProgressStatus = "starting";
@@ -727,6 +865,7 @@ async function generateSubtitles() {
     if (!words.length) {
       state.update({ words: [], originalWords: null, edited: false, generated: false});
       renderPreviewText();
+      renderWordEditor();
       updatePreviewTag();
       updateAvailability();
       setProgress("Tidak ada ucapan terdeteksi di video ini", 0);
@@ -739,6 +878,7 @@ async function generateSubtitles() {
       edited: false,
       generated: true});
     renderPreviewText();
+    renderWordEditor();
     updatePreviewTag();
     updateAvailability();
     const durationSeconds = Math.round((elapsedMs ?? performance.now() - startedAt) / 1000);
@@ -772,268 +912,397 @@ function formatWordTime(milliseconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${tenths}`;
 }
 
-function editorFocusHint(target) {
-  const control = target?.closest?.("[data-editor-control]");
-  if (!control) return null;
-  const index = Number(control.dataset.wordIndex);
-  return {
-    control: control.dataset.editorControl,
-    index: Number.isInteger(index) ? index : null,
-  };
-}
+function getEditorGroups(words = state.get().words) {
+  const grouped = editorMode === "sentence"
+    ? groupWords(words, "sentence")
+    : Array.from({ length: Math.ceil(words.length / Number(editorMode)) }, (_, index) =>
+        words.slice(index * Number(editorMode), (index + 1) * Number(editorMode)),
+      );
+  let nextStartIndex = 0;
 
-function focusWordEditorControl(control, index) {
-  const wordCount = state.get().words.length;
-  const safeIndex = wordCount ? Math.max(0, Math.min(index, wordCount - 1)) : index;
-  const target = wordEditor.querySelector(
-    `[data-editor-control="${control}"][data-word-index="${safeIndex}"]`,
-  );
-  if (target) {
-    target.focus();
-    return;
-  }
-  if (!state.get().words.length) {
-    byId("reset-original-words").focus();
-    return;
-  }
-  wordEditor.querySelector(".word-editor-input")?.focus();
-}
-
-function commitWordInput(input, focusHint = null) {
-  const currentWords = state.get().words;
-  const index = Number(input.dataset.wordIndex);
-  if (!Number.isInteger(index) || !currentWords[index]) {
-    return { changed: false, index, delta: 0, replacementCount: 1 };
-  }
-
-  const text = input.value.trim();
-  if (text === currentWords[index].text) {
-    input.value = text;
-    return { changed: false, index, delta: 0, replacementCount: 1 };
-  }
-
-  const updatedWords = editWord(currentWords, index, text);
-  const replacementCount = updatedWords.length - (currentWords.length - 1);
-  const delta = replacementCount - 1;
-  input.dataset.commitInProgress = "true";
-  state.update({ words: updatedWords, edited: true , generated: true});
-  renderPreviewText();
-
-  if (delta === 0) {
-    input.value = text;
-    input.dataset.originalText = text;
-    delete input.dataset.commitInProgress;
-  } else {
-    renderWordEditor(
-      focusHint
-        ? {
-            ...focusHint,
-            editedIndex: index,
-            delta,
-          }
-        : null,
-    );
-  }
-  updateAvailability();
-  return { changed: true, index, delta, replacementCount };
-}
-
-function bindWordEditorButton(button, action) {
-  let pointerActionPending = false;
-  const run = () => {
-    const activeInput = wordEditor.querySelector(".word-editor-input:focus");
-    const result = activeInput
-      ? commitWordInput(activeInput, editorFocusHint(button))
-      : null;
-    action(result);
-  };
-
-  button.addEventListener("pointerdown", (event) => {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    pointerActionPending = true;
-    run();
-  });
-  button.addEventListener("click", (event) => {
-    if (pointerActionPending && event.detail > 0) {
-      pointerActionPending = false;
-      return;
-    }
-    pointerActionPending = false;
-    run();
+  return grouped.map((group) => {
+    const startIdx = words.indexOf(group[0], nextStartIndex);
+    const endIdx = startIdx + group.length - 1;
+    nextStartIndex = endIdx + 1;
+    return {
+      startIdx,
+      endIdx,
+      words: group,
+      startMs: group[0].start_ms,
+      endMs: group[group.length - 1].end_ms,
+      text: group.map((word) => word.text).join(" "),
+    };
   });
 }
 
-function performWordEditorAction(control, initialIndex, editResult) {
-  let index = initialIndex;
-  if (editResult?.changed && editResult.index < initialIndex) {
-    index += editResult.delta;
+function scrollEditorRowIntoView(row) {
+  if (!row) return;
+  const listRect = wordEditorList.getBoundingClientRect();
+  const rowRect = row.getBoundingClientRect();
+  if (rowRect.top < listRect.top) {
+    wordEditorList.scrollTop -= listRect.top - rowRect.top;
+  } else if (rowRect.bottom > listRect.bottom) {
+    wordEditorList.scrollTop += rowRect.bottom - listRect.bottom;
   }
-  if (
-    editResult?.changed &&
-    editResult.index === initialIndex &&
-    editResult.replacementCount === 0
-  ) {
-    return;
-  }
-
-  const words = state.get().words;
-  const word = words[index];
-  if (!word) return;
-
-  if (control === "time") {
-    const currentMedia = currentMediaElement();
-    if (currentMedia) currentMedia.currentTime = word.start_ms / 1000;
-    state.update({ currentMs: word.start_ms });
-    updateClock(word.start_ms);
-    return;
-  }
-
-  if (control === "merge") {
-    if (index + 1 >= words.length) return;
-    state.update({ words: mergeWithNext(words, index), edited: true , generated: true});
-    renderPreviewText();
-    renderWordEditor({ control: "word", index });
-  } else if (control === "delete") {
-    const updatedWords = deleteWord(words, index);
-    state.update({ words: updatedWords, edited: true , generated: true});
-    renderPreviewText();
-    renderWordEditor({
-      control: updatedWords.length ? "word" : "reset",
-      index: Math.min(index, updatedWords.length - 1),
-    });
-  }
-  updateAvailability();
 }
 
-function renderWordEditor(focusHint = null) {
-  const list = byId("word-editor-list");
+function renderWordEditor({ wordIndex = null, focus = false, focusControl = null } = {}) {
   const words = state.get().words;
-  list.replaceChildren();
+  const groups = getEditorGroups(words);
+  wordEditorList.replaceChildren();
+  editorNeedsRender = false;
+  editorNeedsRenderWordIndex = null;
 
-  if (!words.length) {
-    const empty = document.createElement("p");
-    empty.className = "word-editor-empty";
-    empty.textContent = "Semua kata dihapus. Gunakan Kembalikan ke hasil asli untuk memulihkannya.";
-    list.append(empty);
-  }
-
-  words.forEach((word, index) => {
+  groups.forEach((group, groupIndex) => {
     const row = document.createElement("div");
     row.className = "word-editor-row";
+    row.dataset.editorRowIndex = String(groupIndex);
+    row.dataset.startIndex = String(group.startIdx);
     row.setAttribute("role", "listitem");
+    row.tabIndex = 0;
+
+    const heading = document.createElement("div");
+    heading.className = "word-editor-row-heading";
 
     const time = document.createElement("button");
     time.type = "button";
     time.className = "button button-secondary word-editor-time";
-    time.textContent = formatWordTime(word.start_ms);
-    time.setAttribute("aria-label", `Lompat ke kata ${index + 1} pada ${time.textContent}`);
+    time.textContent = formatWordTime(group.startMs);
+    time.setAttribute("aria-label", `Lompat ke baris ${groupIndex + 1} pada ${time.textContent}`);
     time.dataset.editorControl = "time";
-    time.dataset.wordIndex = String(index);
-    bindWordEditorButton(time, (editResult) => {
-      performWordEditorAction("time", index, editResult);
+    time.addEventListener("click", () => {
+      seekEditorGroup(group);
+      if (editorNeedsRender) {
+        renderWordEditor({ wordIndex: group.startIdx, focus: true, focusControl: "time" });
+      }
     });
 
-    const input = document.createElement("input");
-    input.type = "text";
+    const play = document.createElement("button");
+    play.type = "button";
+    play.className = "button button-secondary word-editor-play";
+    play.textContent = "Putar baris";
+    play.dataset.editorControl = "play";
+    play.setAttribute("aria-label", `Putar baris ${groupIndex + 1}`);
+    play.addEventListener("click", () => {
+      playEditorGroup(group);
+      if (editorNeedsRender) {
+        renderWordEditor({ wordIndex: group.startIdx, focus: true, focusControl: "play" });
+      }
+    });
+    heading.append(time, play);
+
+    const input = document.createElement("textarea");
     input.className = "word-editor-input";
-    input.value = word.text;
-    input.dataset.originalText = word.text;
-    input.dataset.editorControl = "word";
-    input.dataset.wordIndex = String(index);
-    input.setAttribute("aria-label", `Kata ${index + 1}`);
+    input.rows = 1;
+    input.value = group.text;
+    input.dataset.originalText = group.text;
+    input.dataset.startIndex = String(group.startIdx);
+    input.dataset.endIndex = String(group.endIdx);
+    input.setAttribute("aria-label", `Teks baris ${groupIndex + 1}`);
+    input.addEventListener("input", () => resizeEditorTextarea(input));
     input.addEventListener("blur", (event) => {
       if (input.dataset.commitInProgress === "true") return;
-      commitWordInput(input, editorFocusHint(event.relatedTarget));
+      const result = commitEditorTextarea(input);
+      if (result.changed) {
+        if (event.relatedTarget?.matches?.(".word-editor-input")) {
+          renderWordEditor({
+            wordIndex: Number(event.relatedTarget.dataset.startIndex),
+            focus: true,
+          });
+        } else if (!wordEditorList.contains(event.relatedTarget)) {
+          renderWordEditor({ wordIndex: result.focusWordIndex });
+        }
+      }
     });
     input.addEventListener("keydown", (event) => {
+      event.stopPropagation();
+      if (event.key === "Escape") {
+        event.preventDefault();
+        input.value = input.dataset.originalText;
+        resizeEditorTextarea(input);
+        return;
+      }
       if (event.key !== "Enter") return;
       event.preventDefault();
-      const result = commitWordInput(input);
-      const nextIndex = result.index + result.replacementCount;
-      focusWordEditorControl("word", nextIndex);
+      if (event.ctrlKey || event.metaKey) {
+        input.dataset.commitInProgress = "true";
+        const result = commitEditorTextarea(input);
+        renderWordEditor({ wordIndex: result.focusWordIndex, focus: true });
+        const updatedGroup = findCurrentEditorGroup(group);
+        if (updatedGroup) playEditorGroup(updatedGroup);
+        return;
+      }
+
+      input.dataset.commitInProgress = "true";
+      const result = commitEditorTextarea(input);
+      const nextWordIndex = result.startIdx + result.replacementCount;
+      const groups = getEditorGroups();
+      const nextGroup = groups.find((candidate) =>
+        nextWordIndex >= candidate.startIdx && nextWordIndex <= candidate.endIdx,
+      ) ?? groups.find((candidate) => candidate.startIdx >= nextWordIndex);
+      if (nextGroup) {
+        renderWordEditor({ wordIndex: nextGroup.startIdx, focus: true });
+        seekEditorGroup(nextGroup);
+      } else {
+        renderWordEditor({ wordIndex: result.focusWordIndex, focus: true });
+      }
     });
 
-    row.append(time, input);
+    row.addEventListener("click", (event) => {
+      if (event.target.closest("textarea, button")) return;
+      seekEditorGroup(group);
+    });
+    row.append(heading, input);
 
-    if (index < words.length - 1) {
-      const merge = document.createElement("button");
-      merge.type = "button";
-      merge.className = "button button-secondary";
-      merge.textContent = "Gabung dengan berikutnya";
-      merge.dataset.editorControl = "merge";
-      merge.dataset.wordIndex = String(index);
-      bindWordEditorButton(merge, (editResult) => {
-        performWordEditorAction("merge", index, editResult);
-      });
-      row.append(merge);
+    if (editorMode === "1") {
+      const actions = document.createElement("div");
+      actions.className = "word-editor-row-actions";
+      if (group.startIdx < words.length - 1) {
+        const merge = document.createElement("button");
+        merge.type = "button";
+        merge.className = "button button-secondary";
+        merge.textContent = "Gabung dengan berikutnya";
+        merge.dataset.editorControl = "merge";
+        merge.addEventListener("click", () => performWordEditorAction("merge", group.startIdx));
+        actions.append(merge);
+      }
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "button button-secondary";
+      remove.textContent = "Hapus";
+      remove.setAttribute("aria-label", `Hapus kata ${groupIndex + 1}`);
+      remove.dataset.editorControl = "delete";
+      remove.addEventListener("click", () => performWordEditorAction("delete", group.startIdx));
+      actions.append(remove);
+      row.append(actions);
     }
 
-    const remove = document.createElement("button");
-    remove.type = "button";
-    remove.className = "button button-secondary";
-    remove.textContent = "Hapus";
-    remove.setAttribute("aria-label", `Hapus kata ${index + 1}`);
-    remove.dataset.editorControl = "delete";
-    remove.dataset.wordIndex = String(index);
-    bindWordEditorButton(remove, (editResult) => {
-      performWordEditorAction("delete", index, editResult);
-    });
-    row.append(remove);
-    list.append(row);
+    wordEditorList.append(row);
+    resizeEditorTextarea(input);
   });
 
-  const { originalWords, edited } = state.get();
-  byId("reset-original-words").disabled = !originalWords || !edited;
-  if (focusHint) {
-    if (focusHint.control === "reset" || focusHint.control === "close") {
-      wordEditor
-        .querySelector(`[data-editor-control="${focusHint.control}"]`)
-        ?.focus();
-      return;
+  const targetGroup = wordIndex == null
+    ? groups.findIndex((group) => state.get().currentMs >= group.startMs && state.get().currentMs <= group.endMs)
+    : groups.findIndex((group) => wordIndex >= group.startIdx && wordIndex <= group.endIdx);
+  const targetRow = wordEditorList.querySelector(
+    `[data-editor-row-index="${targetGroup >= 0 ? targetGroup : 0}"]`,
+  );
+  if (focus && targetRow) {
+    const focusTarget = targetRow.querySelector(
+      focusControl ? `[data-editor-control="${focusControl}"]` : "textarea",
+    );
+    focusTarget?.focus();
+  } else if (focus && !groups.length && state.get().originalWords) {
+    byId("reset-original-words").focus();
+  }
+  scrollEditorRowIntoView(targetRow);
+  updateEditorPlayback(state.get().currentMs);
+  updateEditorAvailability(taskBusy(), Boolean(currentMediaElement()?.readyState >= 1));
+}
+
+function resizeEditorTextarea(textarea) {
+  textarea.style.height = "auto";
+  textarea.style.height = `${Math.max(36, textarea.scrollHeight)}px`;
+}
+
+function commitEditorTextarea(textarea) {
+  if (taskBusy()) {
+    return { changed: false, startIdx: 0, replacementCount: 0, focusWordIndex: 0 };
+  }
+  const words = state.get().words;
+  const startIdx = Number(textarea.dataset.startIndex);
+  const endIdx = Number(textarea.dataset.endIndex);
+  if (!Number.isInteger(startIdx) || !Number.isInteger(endIdx) || !words[startIdx]) {
+    return { changed: false, startIdx, replacementCount: 0, focusWordIndex: startIdx };
+  }
+
+  const updatedWords = applyGroupText(words, startIdx, endIdx, textarea.value);
+  const replacementCount = updatedWords.length - (words.length - (endIdx - startIdx + 1));
+  const changed =
+    updatedWords.length !== words.length ||
+    updatedWords.some((word, index) =>
+      word.text !== words[index]?.text ||
+      word.start_ms !== words[index]?.start_ms ||
+      word.end_ms !== words[index]?.end_ms,
+    );
+  const focusWordIndex = Math.min(startIdx, Math.max(0, updatedWords.length - 1));
+  if (!changed) {
+    return { changed: false, startIdx, replacementCount, focusWordIndex };
+  }
+
+  state.update({ words: updatedWords, edited: true, generated: true });
+  renderPreviewText();
+  updateAvailability();
+  editorNeedsRender = true;
+  editorNeedsRenderWordIndex = focusWordIndex;
+  return { changed: true, startIdx, replacementCount, focusWordIndex };
+}
+
+function performWordEditorAction(control, index) {
+  if (taskBusy()) return;
+  const words = state.get().words;
+  if (!words[index]) return;
+
+  const updatedWords = control === "merge"
+    ? index + 1 < words.length
+      ? mergeWithNext(words, index)
+      : words
+    : deleteWord(words, index);
+  if (updatedWords === words) return;
+
+  state.update({ words: updatedWords, edited: true, generated: true });
+  renderPreviewText();
+  updateAvailability();
+  renderWordEditor({ wordIndex: Math.min(index, updatedWords.length - 1), focus: true });
+}
+
+function findCurrentEditorGroup(group) {
+  const groups = getEditorGroups();
+  return groups.find((candidate) => candidate.startIdx === group.startIdx) ??
+    groups.find((candidate) => candidate.startIdx >= group.startIdx);
+}
+
+function seekEditorGroup(group) {
+  if (taskBusy()) return;
+  const currentGroup = findCurrentEditorGroup(group);
+  if (!currentGroup) return;
+  stopRowPlayback();
+  const media = currentMediaElement();
+  if (media?.readyState >= 1) {
+    media.currentTime = currentGroup.startMs / 1000;
+  }
+  state.update({ currentMs: currentGroup.startMs });
+  updateClock(currentGroup.startMs);
+}
+
+function playEditorGroup(group) {
+  if (taskBusy()) return;
+  const currentGroup = findCurrentEditorGroup(group);
+  const media = currentMediaElement();
+  if (!currentGroup || !media || media.readyState < 1) return;
+
+  stopRowPlayback();
+  const startMs = Math.max(0, currentGroup.startMs - 300);
+  media.currentTime = startMs / 1000;
+  rowPlayback = { media, endMs: currentGroup.endMs };
+  state.update({ currentMs: startMs });
+  updateClock(startMs);
+  Promise.resolve(media.play()).catch((error) => {
+    if (rowPlayback?.media !== media) return;
+    stopRowPlayback();
+    console.warn("Playback baris:", error);
+    setProgress(`Tidak dapat memutar baris: ${errorMessage(error)}`, 0);
+  });
+}
+
+function stopRowPlayback() {
+  rowPlayback = null;
+}
+
+function updateEditorPlayback(milliseconds) {
+  if (editorNeedsRender && !wordEditorList.contains(document.activeElement)) {
+    renderWordEditor({ wordIndex: editorNeedsRenderWordIndex });
+    return;
+  }
+
+  const groups = getEditorGroups();
+  const activeIndex = groups.findIndex(
+    (group) => milliseconds >= group.startMs && milliseconds <= group.endMs,
+  );
+  wordEditorList.querySelectorAll(".word-editor-row").forEach((row, index) => {
+    row.classList.toggle("is-active", index === activeIndex);
+  });
+
+  if (
+    activeIndex >= 0 &&
+    activeIndex !== Number(wordEditorList.dataset.followedRowIndex) &&
+    byId("editor-follow-playback").checked &&
+    !document.activeElement?.matches(".word-editor-input")
+  ) {
+    scrollEditorRowIntoView(
+      wordEditorList.querySelector(`[data-editor-row-index="${activeIndex}"]`),
+    );
+    wordEditorList.dataset.followedRowIndex = String(activeIndex);
+  }
+  wordEditorList.dataset.activeRowIndex = String(activeIndex);
+
+  if (rowPlayback && rowPlayback.media === currentMediaElement() && milliseconds >= rowPlayback.endMs) {
+    const media = rowPlayback.media;
+    stopRowPlayback();
+    media.pause();
+  }
+}
+
+function updateEditorAvailability(busy, mediaReady) {
+  const { words, originalWords, edited } = state.get();
+  byId("word-editor-empty").hidden = words.length > 0;
+  wordEditorList.hidden = words.length === 0;
+  wordEditorList.tabIndex = words.length ? 0 : -1;
+  byId("reset-original-words").disabled = busy || !originalWords || !edited;
+  document.querySelectorAll(".editor-mode-button").forEach((button) => {
+    button.disabled = busy;
+  });
+  wordEditorList.querySelectorAll(".word-editor-input").forEach((input) => {
+    input.readOnly = busy;
+  });
+  wordEditorList.querySelectorAll("[data-editor-control]").forEach((button) => {
+    const needsMedia = button.dataset.editorControl === "time" ||
+      button.dataset.editorControl === "play";
+    button.disabled = busy || (needsMedia && !mediaReady);
+  });
+}
+
+function activateSettingsTab(tab, { focusList = false } = {}) {
+  const isText = tab === "text";
+  byId("settings-panel-style").hidden = isText;
+  byId("settings-panel-text").hidden = !isText;
+  byId("settings-tab-style").classList.toggle("is-active", !isText);
+  byId("settings-tab-text").classList.toggle("is-active", isText);
+  byId("settings-tab-style").setAttribute("aria-selected", String(!isText));
+  byId("settings-tab-text").setAttribute("aria-selected", String(isText));
+  byId("settings-panel").dataset.activeTab = tab;
+  if (isText) {
+    renderWordEditor();
+    if (focusList && state.get().words.length) {
+      wordEditorList.focus();
+      updateEditorPlayback(state.get().currentMs);
     }
-    let index = focusHint.index ?? 0;
-    if (focusHint.editedIndex != null && index > focusHint.editedIndex) {
-      index += focusHint.delta;
-    }
-    focusWordEditorControl(focusHint.control, index);
   }
 }
 
 function openWordEditor() {
-  if (!state.get().words.length || taskBusy() || wordEditor.open) return;
-  renderWordEditor();
-  wordEditor.showModal();
-  wordEditor.querySelector(".word-editor-input")?.focus();
+  if (!state.get().words.length || taskBusy()) return;
+  activateSettingsTab("text", { focusList: true });
 }
 
 function resetEditedWords() {
   const originalWords = state.get().originalWords;
-  if (!originalWords || !state.get().edited) return;
+  if (!originalWords || !state.get().edited || taskBusy()) return;
   if (!window.confirm("Kembalikan semua kata ke hasil transkripsi asli?")) return;
-  state.update({ words: resetWords(originalWords), edited: false , generated: true});
+  state.update({ words: resetWords(originalWords), edited: false, generated: true });
   renderPreviewText();
   renderWordEditor();
   updateAvailability();
-  wordEditor.querySelector(".word-editor-input")?.focus();
 }
 
-const wordEditor = byId("word-editor");
-bindWordEditorButton(byId("reset-original-words"), resetEditedWords);
-bindWordEditorButton(byId("close-word-editor"), () => wordEditor.close());
-wordEditor.addEventListener("cancel", () => {
-  const activeInput = wordEditor.querySelector(".word-editor-input:focus");
-  if (activeInput) commitWordInput(activeInput);
+byId("settings-tab-style").addEventListener("click", () => activateSettingsTab("style"));
+byId("settings-tab-text").addEventListener("click", () => activateSettingsTab("text"));
+byId("reset-original-words").addEventListener("click", resetEditedWords);
+byId("editor-follow-playback").addEventListener("change", () => {
+  updateEditorPlayback(state.get().currentMs);
 });
-wordEditor.addEventListener("close", () => {
-  const editButton = byId("edit-text");
-  if (!editButton.disabled) {
-    editButton.focus();
-  } else if (!byId("generate-subtitles").disabled) {
-    byId("generate-subtitles").focus();
-  } else {
-    byId("choose-file").focus();
-  }
+document.querySelectorAll(".editor-mode-button").forEach((button) => {
+  button.addEventListener("click", () => {
+    if (taskBusy()) return;
+    editorMode = button.dataset.editorMode;
+    document.querySelectorAll(".editor-mode-button").forEach((modeButton) => {
+      const selected = modeButton === button;
+      modeButton.classList.toggle("is-active", selected);
+      modeButton.setAttribute("aria-pressed", String(selected));
+    });
+    renderWordEditor();
+  });
 });
 
 async function exportSubtitles() {
@@ -1053,6 +1322,7 @@ async function exportSubtitles() {
       width: 1080,
       height: 1920,
       wordsPerLine: effectiveWordsPerLine(),
+      captionPosition: captionPositions.get(selectedPresetId) ?? null,
       defaultPath: `${baseName}.${format}`,
     });
     if (!path) {
@@ -1106,6 +1376,7 @@ async function createVideo() {
     return;
   }
 
+  stopRowPlayback();
   preparingVideo = true;
   updateAvailability();
   try {
@@ -1140,6 +1411,7 @@ async function createVideo() {
         words: state.get().words,
         presetId: selectedPresetId,
         wordsPerLine: effectiveWordsPerLine(),
+        captionPosition: captionPositions.get(selectedPresetId) ?? null,
         output,
         quality: "cepat",
       },
@@ -1268,10 +1540,12 @@ for (const mediaElement of [video, audio]) {
     updatePlayButton(true);
   });
   mediaElement.addEventListener("pause", () => {
+    if (rowPlayback?.media === mediaElement) stopRowPlayback();
     state.update({ isPlaying: false });
     updatePlayButton(false);
   });
   mediaElement.addEventListener("ended", () => {
+    if (rowPlayback?.media === mediaElement) stopRowPlayback();
     state.update({ isPlaying: false });
     updatePlayButton(false);
   });
@@ -1310,12 +1584,19 @@ byId("model-select").addEventListener("change", () => {
 });
 
 byId("seek-slider").addEventListener("input", (event) => {
+  stopRowPlayback();
   const currentMs = Math.round(Number(event.target.value) * 1000);
   const element = currentMediaElement();
   if (element) element.currentTime = currentMs / 1000;
   state.update({ currentMs });
   updateClock(currentMs);
 });
+
+previewStage.addEventListener("pointerdown", beginCaptionDrag);
+previewStage.addEventListener("pointermove", moveCaptionDrag);
+previewStage.addEventListener("pointerup", endCaptionDrag);
+previewStage.addEventListener("pointercancel", endCaptionDrag);
+previewStage.addEventListener("lostpointercapture", endCaptionDrag);
 
 for (const control of document.querySelectorAll(
   'input[name="words-per-line"], #highlight-toggle, #font-select, #font-size, #text-color, #highlight-color, #position-select, #outline-size, #shadow-size',

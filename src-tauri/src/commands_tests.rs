@@ -344,12 +344,97 @@ fn render_ass_impl_ok() {
         width: 1080,
         height: 1920,
         words_per_line: Some(WordsPerLineWire::Number(1)),
+        caption_position: None,
     };
     let res = render_ass_impl(&req).unwrap();
     assert!(res.ass.contains("[Script Info]"));
     assert!(res.ass.contains("PlayResX: 1080"));
     assert!(res.ass.contains("PlayResY: 1920"));
     assert!(res.ass.contains("HALO"), "harus uppercase");
+    assert!(!res.ass.contains("\\pos("));
+}
+
+#[test]
+fn render_ass_position_is_applied_to_primary_and_glow_events() {
+    let req = RenderRequest {
+        words: vec![
+            WordDto {
+                text: "Halo".into(),
+                start_ms: 100,
+                end_ms: 500,
+            },
+            WordDto {
+                text: "dunia.".into(),
+                start_ms: 500,
+                end_ms: 1000,
+            },
+        ],
+        preset_id: "baris-neon-mint".into(),
+        width: 1080,
+        height: 1920,
+        words_per_line: Some(WordsPerLineWire::Number(2)),
+        caption_position: Some(CaptionPositionWire {
+            x_percent: 25.0,
+            y_percent: 75.0,
+        }),
+    };
+
+    let result = render_ass_impl(&req).unwrap();
+    let dialogues: Vec<_> = result
+        .ass
+        .lines()
+        .filter(|line| line.starts_with("Dialogue:"))
+        .collect();
+    assert!(dialogues
+        .iter()
+        .any(|line| line.starts_with("Dialogue: 0,")));
+    assert!(dialogues
+        .iter()
+        .any(|line| line.starts_with("Dialogue: 1,")));
+    assert!(dialogues
+        .iter()
+        .all(|line| line.contains("{\\an5\\pos(270,1440)}")));
+}
+
+#[test]
+fn render_ass_rejects_invalid_caption_position() {
+    let req = RenderRequest {
+        words: vec![WordDto {
+            text: "Caption".into(),
+            start_ms: 100,
+            end_ms: 500,
+        }],
+        preset_id: "kata-tebal-putih".into(),
+        width: 1080,
+        height: 1920,
+        words_per_line: None,
+        caption_position: Some(CaptionPositionWire {
+            x_percent: 101.0,
+            y_percent: 50.0,
+        }),
+    };
+    assert!(render_ass_impl(&req).is_err());
+}
+
+#[test]
+fn export_ass_forwards_caption_position() {
+    let mut req = sample_export_request();
+    req.caption_position = Some(CaptionPositionWire {
+        x_percent: 50.0,
+        y_percent: 50.0,
+    });
+
+    let ass = render_export_impl(&req, "ass").unwrap();
+    assert!(ass.contains("{\\an5\\pos(540,960)}"));
+}
+
+#[test]
+fn render_request_accepts_legacy_payload_without_caption_position() {
+    let req: RenderRequest = serde_json::from_str(
+        r#"{"words":[],"preset_id":"kata-tebal-putih","width":1080,"height":1920}"#,
+    )
+    .unwrap();
+    assert!(req.caption_position.is_none());
 }
 
 #[test]
@@ -364,6 +449,7 @@ fn render_ass_impl_bad_preset() {
         width: 1080,
         height: 1920,
         words_per_line: None,
+        caption_position: None,
     };
     assert!(render_ass_impl(&req).is_err());
 }
@@ -380,6 +466,7 @@ fn render_ass_impl_bad_words_per_line() {
         width: 1080,
         height: 1920,
         words_per_line: Some(WordsPerLineWire::Number(5)),
+        caption_position: None,
     };
     assert!(render_ass_impl(&req).is_err());
 }
@@ -396,6 +483,7 @@ fn render_ass_impl_accepts_sentence_wire_value() {
         width: 1080,
         height: 1920,
         words_per_line: Some(WordsPerLineWire::Sentence(SentenceWire::Sentence)),
+        caption_position: None,
     };
     let result = render_ass_impl(&req).unwrap();
     assert!(result.ass.contains("HALO."));
@@ -439,6 +527,7 @@ fn sample_export_request() -> RenderRequest {
         width: 1080,
         height: 1920,
         words_per_line: Some(WordsPerLineWire::Number(2)),
+        caption_position: None,
     }
 }
 
@@ -602,8 +691,12 @@ fn burn_video_sidecar_integration() {
     use std::sync::Arc;
 
     let sidecars = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("binaries");
-    let ffmpeg = sidecars.join("ffmpeg-x86_64-pc-windows-msvc.exe");
-    let ffprobe = sidecars.join("ffprobe-x86_64-pc-windows-msvc.exe");
+    let ffmpeg = std::env::var_os("CAPTION_TEST_FFMPEG")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| sidecars.join("ffmpeg-x86_64-pc-windows-msvc.exe"));
+    let ffprobe = std::env::var_os("CAPTION_TEST_FFPROBE")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| sidecars.join("ffprobe-x86_64-pc-windows-msvc.exe"));
     assert!(
         ffmpeg.is_file(),
         "sidecar tidak ditemukan: {}",
@@ -666,9 +759,14 @@ fn burn_video_sidecar_integration() {
         width: info.width,
         height: info.height,
         words_per_line: Some(WordsPerLineWire::Number(1)),
+        caption_position: Some(CaptionPositionWire {
+            x_percent: 50.0,
+            y_percent: 50.0,
+        }),
     })
     .unwrap()
     .ass;
+    assert!(ass.contains("{\\an5\\pos(540,960)}"));
     let job = Arc::new(BurnJob::default());
     run_ffmpeg_burn(
         BurnProcess {

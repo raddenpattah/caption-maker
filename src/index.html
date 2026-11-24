@@ -90,7 +90,7 @@
           </section>
         </section>
 
-        <aside class="panel settings-panel" aria-labelledby="settings-title">
+        <aside id="settings-panel" class="panel settings-panel" aria-labelledby="settings-title" data-active-tab="style">
           <div class="section-heading">
             <div>
               <p class="eyebrow">03 / GAYA</p>
@@ -99,6 +99,12 @@
             <span class="step-badge" aria-hidden="true">03</span>
           </div>
 
+          <div class="settings-tabs" role="tablist" aria-label="Panel subtitle">
+            <button id="settings-tab-style" class="settings-tab is-active" type="button" role="tab" aria-selected="true" aria-controls="settings-panel-style">Gaya</button>
+            <button id="settings-tab-text" class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="settings-panel-text">Teks</button>
+          </div>
+
+          <div id="settings-panel-style" class="settings-tab-panel" role="tabpanel" aria-labelledby="settings-tab-style">
           <div class="field preset-field">
             <label>Gaya caption (preset)</label>
             <div id="preset-gallery" class="preset-gallery is-disabled" role="radiogroup" aria-label="Pilih gaya caption" aria-disabled="true">
@@ -208,27 +214,25 @@
             </button>
           </div>
           <p id="settings-disclaimer" class="settings-disclaimer">Transkripsi menggunakan model Whisper terpasang; overlay pratinjau adalah perkiraan CSS.</p>
+          </div>
+
+          <div id="settings-panel-text" class="settings-tab-panel text-editor-panel" role="tabpanel" aria-labelledby="settings-tab-text" hidden>
+            <div class="editor-toolbar">
+              <div class="editor-mode-control" role="group" aria-label="Mode pengelompokan editor">
+                <button class="editor-mode-button is-active" type="button" data-editor-mode="1" aria-pressed="true">Kata</button>
+                <button class="editor-mode-button" type="button" data-editor-mode="3" aria-pressed="false">3 Kata</button>
+                <button class="editor-mode-button" type="button" data-editor-mode="5" aria-pressed="false">5 Kata</button>
+                <button class="editor-mode-button" type="button" data-editor-mode="sentence" aria-pressed="false">Kalimat</button>
+              </div>
+              <label class="editor-follow-control"><input id="editor-follow-playback" type="checkbox" checked /> Ikuti pemutaran</label>
+            </div>
+            <p class="word-editor-description">Enter menyimpan dan berpindah ke baris berikutnya. Ctrl+Enter memutar baris; Esc membatalkan perubahan.</p>
+            <p id="word-editor-empty" class="word-editor-empty">Buat Subtitle dulu</p>
+            <div id="word-editor-list" class="word-editor-list" role="list" aria-label="Daftar teks subtitle" tabindex="0"></div>
+            <button class="button button-secondary reset-original-words" id="reset-original-words" type="button" data-editor-control="reset">Kembalikan ke hasil asli</button>
+          </div>
         </aside>
       </main>
-
-      <dialog id="word-editor" class="word-editor" aria-labelledby="word-editor-title" aria-describedby="word-editor-description">
-        <div class="word-editor-content">
-          <header class="word-editor-heading">
-            <div>
-              <p class="eyebrow">KOREKSI TRANSKRIPSI</p>
-              <h2 id="word-editor-title">Edit kata</h2>
-            </div>
-          </header>
-          <p id="word-editor-description" class="word-editor-description">
-            Enter atau pindah fokus untuk menyimpan. Spasi membagi teks menjadi beberapa kata.
-          </p>
-          <div id="word-editor-list" class="word-editor-list" role="list" aria-label="Daftar kata subtitle"></div>
-          <footer class="word-editor-actions">
-            <button class="button button-secondary" id="reset-original-words" type="button" data-editor-control="reset">Kembalikan ke hasil asli</button>
-            <button class="button button-primary" id="close-word-editor" type="button" data-editor-control="close">Tutup</button>
-          </footer>
-        </div>
-      </dialog>
 
       <footer class="task-bar" aria-label="Proses dan ekspor">
         <div class="progress-area">

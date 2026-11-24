@@ -24,7 +24,9 @@ pub use preset::{
     builtin_presets, find_preset, validate_preset, Emphasis, PresetBox, PresetCategory,
     PresetColors, PresetFont, PresetGlow, StylePreset,
 };
-pub use preset_render::{ass_color_from_hex, render_ass_with_preset, PresetOptions, VideoGeometry};
+pub use preset_render::{
+    ass_color_from_hex, render_ass_with_preset, CaptionPosition, PresetOptions, VideoGeometry,
+};
 pub use video::{
     build_burn_args, default_ffprobe_for, parse_ffprobe_json, parse_progress_line, percent,
     setup_work_dir, ProgressUpdate, Quality, VideoInfo, WorkDirGuard, BUNDLED_FONTS,

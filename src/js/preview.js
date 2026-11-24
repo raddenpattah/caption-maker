@@ -64,6 +64,82 @@ export function getVideoRect(stage, video) {
   };
 }
 
+function validateCaptionRect(videoRect, blockRect) {
+  if (
+    !Number.isFinite(videoRect?.left) ||
+    !Number.isFinite(videoRect?.top) ||
+    !Number.isFinite(videoRect?.width) ||
+    !Number.isFinite(videoRect?.height) ||
+    videoRect.width <= 0 ||
+    videoRect.height <= 0 ||
+    !Number.isFinite(blockRect?.width) ||
+    !Number.isFinite(blockRect?.height) ||
+    !Number.isFinite(blockRect?.left) ||
+    !Number.isFinite(blockRect?.top) ||
+    blockRect.width < 0 ||
+    blockRect.height < 0
+  ) {
+    throw new RangeError("Ukuran area video atau blok caption tidak valid.");
+  }
+}
+
+export function getCaptionPosition(videoRect, blockRect) {
+  validateCaptionRect(videoRect, blockRect);
+  return {
+    x: ((blockRect.left + blockRect.width / 2 - videoRect.left) / videoRect.width) * 100,
+    y: ((blockRect.top + blockRect.height / 2 - videoRect.top) / videoRect.height) * 100,
+  };
+}
+
+export function getCaptionVisualOutset(metrics) {
+  return Math.max(metrics.outline, metrics.shadow * 2, metrics.glowRadius * 2);
+}
+
+export function clampCaptionPosition(position, videoRect, blockRect, outset = 0) {
+  validateCaptionRect(videoRect, blockRect);
+  if (
+    !Number.isFinite(position?.x) ||
+    !Number.isFinite(position?.y) ||
+    !Number.isFinite(outset) ||
+    outset < 0
+  ) {
+    throw new RangeError("Posisi atau batas visual caption tidak valid.");
+  }
+
+  const minX = ((blockRect.width / 2 + outset) / videoRect.width) * 100;
+  const minY = ((blockRect.height / 2 + outset) / videoRect.height) * 100;
+  const maxX = 100 - minX;
+  const maxY = 100 - minY;
+  return {
+    x: minX > maxX ? 50 : Math.max(minX, Math.min(maxX, position.x)),
+    y: minY > maxY ? 50 : Math.max(minY, Math.min(maxY, position.y)),
+  };
+}
+
+export function moveCaptionPosition(position, deltaX, deltaY, videoRect, blockRect, outset = 0) {
+  validateCaptionRect(videoRect, blockRect);
+  if (!Number.isFinite(deltaX) || !Number.isFinite(deltaY)) {
+    throw new RangeError("Perpindahan caption tidak valid.");
+  }
+  return clampCaptionPosition(
+    {
+      x: position.x + (deltaX / videoRect.width) * 100,
+      y: position.y + (deltaY / videoRect.height) * 100,
+    },
+    videoRect,
+    blockRect,
+    outset,
+  );
+}
+
+export function applyCaptionPosition(content, position) {
+  content.style.position = "absolute";
+  content.style.left = `${position.x}%`;
+  content.style.top = `${position.y}%`;
+  content.style.transform = "translate(-50%, -50%)";
+  content.style.margin = "0";
+}
+
 export function computePreviewMetrics({ rect, videoWidth, videoHeight, preset, settings = {} }) {
   const hasVideoDimensions =
     Number.isFinite(videoWidth) &&
@@ -226,6 +302,12 @@ export function renderPreview(container, words, currentMs, settings) {
   content.style.display = "inline-block";
   content.style.position = "relative";
   content.style.zIndex = "2";
+  content.classList.add("is-draggable");
+  content.style.setProperty(
+    "max-width",
+    `${Math.max(0, videoRect.width - metrics.marginLr * 2)}px`,
+    "important",
+  );
 
   if (hasBox) {
     content.style.backgroundColor = preset.box.color;
@@ -281,6 +363,16 @@ export function renderPreview(container, words, currentMs, settings) {
 
     content.appendChild(span);
   });
+
+  if (settings.captionPosition) {
+    const position = clampCaptionPosition(
+      settings.captionPosition,
+      { left: 0, top: 0, width: videoRect.width, height: videoRect.height },
+      content.getBoundingClientRect(),
+      getCaptionVisualOutset(metrics),
+    );
+    applyCaptionPosition(content, position);
+  }
 
   return true;
 }

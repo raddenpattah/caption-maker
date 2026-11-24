@@ -115,6 +115,25 @@ impl WordsPerLineWire {
     }
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct CaptionPositionWire {
+    pub x_percent: f64,
+    pub y_percent: f64,
+}
+
+impl TryFrom<CaptionPositionWire> for caption_core::CaptionPosition {
+    type Error = String;
+
+    fn try_from(position: CaptionPositionWire) -> Result<Self, Self::Error> {
+        let position = Self {
+            x_percent: position.x_percent,
+            y_percent: position.y_percent,
+        };
+        position.validate()?;
+        Ok(position)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RenderRequest {
     pub words: Vec<WordDto>,
@@ -122,6 +141,8 @@ pub struct RenderRequest {
     pub width: u32,
     pub height: u32,
     pub words_per_line: Option<WordsPerLineWire>,
+    #[serde(default)]
+    pub caption_position: Option<CaptionPositionWire>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -507,6 +528,7 @@ pub fn render_ass_impl(req: &RenderRequest) -> Result<RenderResult, String> {
     let (groups, preset, geometry, per_line) = render_groups_impl(req)?;
     let opts = caption_core::PresetOptions {
         words_per_line: Some(per_line),
+        caption_position: req.caption_position.map(TryInto::try_into).transpose()?,
     };
     let ass = caption_core::render_ass_with_preset(&groups, &preset, geometry, &opts);
     Ok(RenderResult { ass })
@@ -520,12 +542,14 @@ pub fn render_export_impl(req: &RenderRequest, format: &str) -> Result<String, S
     ) {
         return Err(format!("Format ekspor tidak didukung: {format}"));
     }
+    let caption_position = req.caption_position.map(TryInto::try_into).transpose()?;
 
     let (groups, preset, geometry, per_line) = render_groups_impl(req)?;
     match normalized_format.as_str() {
         "ass" => {
             let opts = caption_core::PresetOptions {
                 words_per_line: Some(per_line),
+                caption_position,
             };
             Ok(caption_core::render_ass_with_preset(
                 &groups, &preset, geometry, &opts,
@@ -646,6 +670,8 @@ pub struct BurnRequest {
     pub words: Vec<WordDto>,
     pub preset_id: String,
     pub words_per_line: WordsPerLineWire,
+    #[serde(default)]
+    pub caption_position: Option<CaptionPositionWire>,
     pub output: String,
     pub quality: BurnQualityWire,
 }
@@ -1487,6 +1513,7 @@ fn burn_video_impl(
         width: info.width,
         height: info.height,
         words_per_line: Some(WordsPerLineWire::from(words_per_line)),
+        caption_position: request.caption_position,
     };
     let ass = render_ass_impl(&render_request)?.ass;
     run_ffmpeg_burn(

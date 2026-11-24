@@ -7,6 +7,34 @@
 use crate::model::{Group, WordsPerLine};
 use crate::preset::{Emphasis, StylePreset};
 
+/// Posisi anchor tengah caption sebagai persentase dari PlayRes.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct CaptionPosition {
+    pub x_percent: f64,
+    pub y_percent: f64,
+}
+
+impl CaptionPosition {
+    pub fn validate(self) -> Result<(), String> {
+        if !self.x_percent.is_finite()
+            || !self.y_percent.is_finite()
+            || !(0.0..=100.0).contains(&self.x_percent)
+            || !(0.0..=100.0).contains(&self.y_percent)
+        {
+            return Err(
+                "posisi caption harus berupa persentase finite dalam rentang 0..=100".into(),
+            );
+        }
+        Ok(())
+    }
+
+    fn ass_override(self, geometry: &VideoGeometry) -> String {
+        let x = (self.x_percent * f64::from(geometry.width) / 100.0).round() as u32;
+        let y = (self.y_percent * f64::from(geometry.height) / 100.0).round() as u32;
+        format!("{{\\an5\\pos({x},{y})}}")
+    }
+}
+
 /// Geometri video sebenarnya (setelah rotasi).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VideoGeometry {
@@ -29,6 +57,8 @@ impl VideoGeometry {
 pub struct PresetOptions {
     /// Override `words_per_line` dari preset (None = pakai preset).
     pub words_per_line: Option<WordsPerLine>,
+    /// Posisi anchor tengah caption; None mempertahankan alignment dan margin preset.
+    pub caption_position: Option<CaptionPosition>,
 }
 
 /// Karakter teks yang harus di-escape di ASS.
@@ -187,6 +217,10 @@ pub fn render_ass_with_preset(
     );
 
     let glow_layer = preset.glow.is_some();
+    let position_override = options
+        .caption_position
+        .map(|position| position.ass_override(&geometry))
+        .unwrap_or_default();
 
     for group in &regrouped {
         if group.words.is_empty() {
@@ -195,16 +229,17 @@ pub fn render_ass_with_preset(
         match preset.emphasis {
             Emphasis::None | Emphasis::Fill => {
                 if glow_layer {
-                    render_glow_events(&mut out, preset, group, &geometry);
+                    render_glow_events(&mut out, preset, group, &geometry, &position_override);
                 }
                 let text = match preset.emphasis {
                     Emphasis::Fill => build_fill_text(preset, group, &geometry),
                     _ => build_group_text(preset, group, None),
                 };
                 out.push_str(&format!(
-                    "Dialogue: 1,{},{},Default,,0,0,0,,{}\n",
+                    "Dialogue: 1,{},{},Default,,0,0,0,,{}{}\n",
                     timestamp(group.start_ms()),
                     timestamp(group.end_ms()),
+                    position_override,
                     text
                 ));
             }
@@ -217,13 +252,22 @@ pub fn render_ass_with_preset(
                         group.words.last().unwrap().end_ms
                     };
                     if glow_layer {
-                        render_glow_single(&mut out, preset, group, start, end, &geometry);
+                        render_glow_single(
+                            &mut out,
+                            preset,
+                            group,
+                            start,
+                            end,
+                            &geometry,
+                            &position_override,
+                        );
                     }
                     let text = build_group_text(preset, group, Some(i));
                     out.push_str(&format!(
-                        "Dialogue: 1,{},{},Default,,0,0,0,,{}\n",
+                        "Dialogue: 1,{},{},Default,,0,0,0,,{}{}\n",
                         timestamp(start),
                         timestamp(end),
+                        position_override,
                         text
                     ));
                 }
@@ -265,15 +309,17 @@ fn render_glow_events(
     preset: &StylePreset,
     group: &Group,
     geometry: &VideoGeometry,
+    position_override: &str,
 ) {
     let g = preset.glow.as_ref().unwrap();
     let c = ass_color_from_hex(&g.color).unwrap_or("&H00000000&".into());
     let r = (f64::from(g.radius) * geometry.scale()).round() as u32;
     let text = build_group_text(preset, group, None);
     out.push_str(&format!(
-        "Dialogue: 0,{},{},Default,,0,0,0,,{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
+        "Dialogue: 0,{},{},Default,,0,0,0,,{}{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
         timestamp(group.start_ms()),
         timestamp(group.end_ms()),
+        position_override,
     ));
 }
 
@@ -284,14 +330,16 @@ fn render_glow_single(
     start: u32,
     end: u32,
     geometry: &VideoGeometry,
+    position_override: &str,
 ) {
     let g = preset.glow.as_ref().unwrap();
     let c = ass_color_from_hex(&g.color).unwrap_or("&H00000000&".into());
     let r = (f64::from(g.radius) * geometry.scale()).round() as u32;
     let text = build_group_text(preset, group, None);
     out.push_str(&format!(
-        "Dialogue: 0,{},{},Default,,0,0,0,,{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
+        "Dialogue: 0,{},{},Default,,0,0,0,,{}{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
         timestamp(start),
         timestamp(end),
+        position_override,
     ));
 }

@@ -1,7 +1,7 @@
 use caption_core::model::{Group, Word, WordsPerLine};
 use caption_core::preset::find_preset;
 use caption_core::preset_render::{
-    ass_color_from_hex, render_ass_with_preset, PresetOptions, VideoGeometry,
+    ass_color_from_hex, render_ass_with_preset, CaptionPosition, PresetOptions, VideoGeometry,
 };
 use caption_core::validate_ass;
 
@@ -320,11 +320,37 @@ fn words_per_line_override_works() {
     let p = find_preset("kata-tebal-putih").unwrap(); // default 1
     let opts = PresetOptions {
         words_per_line: Some(WordsPerLine::Three),
+        ..PresetOptions::default()
     };
     let ass = render_ass_with_preset(&words_5(), &p, portrait(), &opts);
     let events = dialogue_lines(&ass);
     // 5 kata → grup 3 + 2 = 2 event
     assert_eq!(events.len(), 2, "override words_per_line=3 → 2 event");
+}
+
+#[test]
+fn custom_position_applies_to_glow_and_primary_events_at_playres_resolution() {
+    let preset = find_preset("baris-neon-mint").unwrap();
+    let geometry = small_portrait();
+    let options = PresetOptions {
+        caption_position: Some(CaptionPosition {
+            x_percent: 25.0,
+            y_percent: 75.0,
+        }),
+        ..PresetOptions::default()
+    };
+
+    let ass = render_ass_with_preset(&words_3(), &preset, geometry, &options);
+    let dialogues = dialogue_lines(&ass);
+    assert!(dialogues
+        .iter()
+        .any(|line| line.starts_with("Dialogue: 0,") && line.contains("\\pos(180,960)")));
+    assert!(dialogues
+        .iter()
+        .any(|line| line.starts_with("Dialogue: 1,") && line.contains("\\pos(180,960)")));
+    assert!(dialogues
+        .iter()
+        .all(|line| line.contains("{\\an5\\pos(180,960)}")));
 }
 
 #[test]

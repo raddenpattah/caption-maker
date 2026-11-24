@@ -176,6 +176,12 @@ export async function exportSubtitleFile(options = {}) {
       width: options.width ?? 1080,
       height: options.height ?? 1920,
       words_per_line: options.wordsPerLine ?? null,
+      caption_position: options.captionPosition
+        ? {
+            x_percent: options.captionPosition.x,
+            y_percent: options.captionPosition.y,
+          }
+        : null,
     },
   });
 }
@@ -195,6 +201,12 @@ export async function burnVideo(options = {}, onProgress = () => {}) {
         words: options.words ?? [],
         preset_id: options.presetId,
         words_per_line: options.wordsPerLine,
+        caption_position: options.captionPosition
+          ? {
+              x_percent: options.captionPosition.x,
+              y_percent: options.captionPosition.y,
+            }
+          : null,
         output: options.output,
         quality: options.quality ?? "bagus",
       },

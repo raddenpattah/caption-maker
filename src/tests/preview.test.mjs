@@ -2,10 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  clampCaptionPosition,
   computePreviewMetrics,
+  getCaptionPosition,
   getVideoRect,
   groupWords,
   loadPreviewFont,
+  moveCaptionPosition,
 } from "../js/preview.js";
 
 const words = ["satu", "dua", "tiga", "empat", "lima"].map((text, index) => ({
@@ -78,6 +81,42 @@ test("memakai ukuran referensi portrait jika videoWidth nol", () => {
       { videoWidth: 0, videoHeight: 0 },
     ),
     { left: 546.875, top: 0, width: 506.25, height: 900, scale: 0.46875 },
+  );
+});
+
+test("menghitung anchor tengah caption relatif terhadap videoRect", () => {
+  assert.deepEqual(
+    getCaptionPosition(
+      { left: 100, top: 50, width: 400, height: 200 },
+      { left: 250, top: 125, width: 100, height: 50 },
+    ),
+    { x: 50, y: 50 },
+  );
+});
+
+test("membatasi anchor agar seluruh blok dan efeknya berada di area video", () => {
+  const position = clampCaptionPosition(
+    { x: -10, y: 110 },
+    { left: 0, top: 0, width: 400, height: 200 },
+    { left: 0, top: 0, width: 100, height: 40 },
+    5,
+  );
+
+  assert.ok(Math.abs(position.x - 13.75) < 0.0001);
+  assert.equal(position.y, 87.5);
+});
+
+test("mengubah drag pixel menjadi persen dan membatasi posisi akhir", () => {
+  assert.deepEqual(
+    moveCaptionPosition(
+      { x: 50, y: 50 },
+      200,
+      -120,
+      { left: 0, top: 0, width: 400, height: 200 },
+      { left: 0, top: 0, width: 100, height: 40 },
+      5,
+    ),
+    { x: 86.25, y: 12.5 },
   );
 });
 
