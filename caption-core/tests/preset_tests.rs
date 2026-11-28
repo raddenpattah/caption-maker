@@ -1,5 +1,5 @@
 use caption_core::preset::{
-    builtin_presets, find_preset, validate_preset, Emphasis, PresetCategory, StylePreset,
+    builtin_presets, find_preset, validate_preset, Animation, Emphasis, PresetCategory, StylePreset,
 };
 
 #[test]
@@ -95,4 +95,33 @@ fn json_uses_box_key_not_box_underscore() {
         "JSON harus pakai key box, dapat: {json}"
     );
     assert!(!json.contains("\"box_\":"), "JSON tidak boleh pakai box_");
+}
+
+#[test]
+fn animation_defaults_to_none_and_rejects_unknown_values() {
+    let preset = find_preset("kata-bangers").unwrap();
+    let mut value = serde_json::to_value(&preset).unwrap();
+    value.as_object_mut().unwrap().remove("animation");
+    let legacy: StylePreset = serde_json::from_value(value).unwrap();
+    assert_eq!(legacy.animation, Animation::None);
+
+    let mut value = serde_json::to_value(&preset).unwrap();
+    value["animation"] = serde_json::json!("bounce");
+    assert!(serde_json::from_value::<StylePreset>(value).is_err());
+}
+
+#[test]
+fn only_kata_tebal_putih_has_pop_animation() {
+    for preset in builtin_presets().unwrap() {
+        assert_eq!(
+            preset.animation,
+            if preset.id == "kata-tebal-putih" {
+                Animation::Pop
+            } else {
+                Animation::None
+            },
+            "{}",
+            preset.id
+        );
+    }
 }

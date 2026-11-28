@@ -5,6 +5,7 @@ import {
   buildLibassFontOptions,
   clampCaptionPosition,
   computePreviewMetrics,
+  computePopScale,
   getCaptionPosition,
   getLibassCanvasSize,
   getVideoRect,
@@ -12,6 +13,21 @@ import {
   loadPreviewFont,
   moveCaptionPosition,
 } from "../js/preview.js";
+
+test("menghitung skala animasi pop sesuai keyframe", () => {
+  assert.equal(computePopScale(0, 300), 0.85);
+  assert.equal(computePopScale(45, 300), 0.965);
+  assert.equal(computePopScale(90, 300), 1.08);
+  assert.equal(computePopScale(160, 300), 1);
+  assert.equal(computePopScale(500, 300), 1);
+  assert.equal(computePopScale(-10, 300), 0.85);
+  assert.equal(computePopScale(0, 30), 1);
+});
+
+test("menginterpolasi animasi pop untuk durasi 100 ms", () => {
+  const expected = 0.85 + ((1.08 - 0.85) * 50) / 56;
+  assert.ok(Math.abs(computePopScale(50, 100) - expected) < 1e-12);
+});
 
 const words = ["satu", "dua", "tiga", "empat", "lima"].map((text, index) => ({
   text,

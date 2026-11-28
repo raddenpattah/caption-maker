@@ -19,7 +19,7 @@ use tauri::{Emitter, Manager};
 
 use caption_core::model::Word;
 use caption_core::preset::{
-    Emphasis, PresetBox, PresetColors, PresetFont, PresetGlow, StylePreset,
+    Animation, Emphasis, PresetBox, PresetColors, PresetFont, PresetGlow, StylePreset,
 };
 
 // ---------- Tipe data bersama ----------
@@ -86,6 +86,7 @@ pub struct PresetSummary {
     pub glow: Option<PresetGlow>,
     pub emphasis: Emphasis,
     pub emphasis_scale: Option<u32>,
+    pub animation: Animation,
     #[serde(rename = "box")]
     pub box_: Option<PresetBox>,
 }
@@ -492,6 +493,7 @@ pub fn list_presets_impl() -> Result<Vec<PresetSummary>, String> {
             glow: p.glow,
             emphasis: p.emphasis,
             emphasis_scale: p.emphasis_scale,
+            animation: p.animation,
             box_: p.box_,
         })
         .collect())

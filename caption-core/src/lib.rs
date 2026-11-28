@@ -21,7 +21,7 @@ pub use model::{
     AssOptions, AssStyle, Group, RawToken, Rgb, TranscribeOptions, Word, WordsPerLine,
 };
 pub use preset::{
-    builtin_presets, find_preset, validate_preset, Emphasis, PresetBox, PresetCategory,
+    builtin_presets, find_preset, validate_preset, Animation, Emphasis, PresetBox, PresetCategory,
     PresetColors, PresetFont, PresetGlow, StylePreset,
 };
 pub use preset_render::{

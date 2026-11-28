@@ -64,6 +64,34 @@ export function getVideoRect(stage, video) {
   };
 }
 
+export const POP_START_SCALE = 85;
+export const POP_OVERSHOOT_SCALE = 108;
+export const POP_UP_MS = 90;
+export const POP_TOTAL_MS = 160;
+export const POP_MIN_DURATION_MS = 40;
+
+// samakan dengan POP_* di preset_render.rs
+export function computePopScale(elapsedMs, durationMs) {
+  if (!Number.isFinite(elapsedMs) || !Number.isFinite(durationMs)) return 1;
+  if (durationMs < POP_MIN_DURATION_MS) return 1;
+
+  const totalMs = Math.min(POP_TOTAL_MS, durationMs);
+  const upMs = Math.round((totalMs * POP_UP_MS) / POP_TOTAL_MS);
+
+  if (elapsedMs <= 0) return POP_START_SCALE / 100;
+  if (elapsedMs >= totalMs) return 1;
+  if (elapsedMs <= upMs) {
+    return (
+      POP_START_SCALE +
+      ((POP_OVERSHOOT_SCALE - POP_START_SCALE) * elapsedMs) / upMs
+    ) / 100;
+  }
+  return (
+    POP_OVERSHOOT_SCALE -
+    ((POP_OVERSHOOT_SCALE - 100) * (elapsedMs - upMs)) / (totalMs - upMs)
+  ) / 100;
+}
+
 export function getLibassCanvasSize(rect, devicePixelRatio = 1) {
   const dpr = Number.isFinite(devicePixelRatio) && devicePixelRatio > 0
     ? Math.min(devicePixelRatio, 2)
@@ -325,6 +353,15 @@ export function renderPreview(container, words, currentMs, settings) {
   }
 
   const displayWords = Array.isArray(activeGroup) ? activeGroup : [activeGroup];
+  const popScale =
+    preset.animation === "pop" &&
+    emphasis !== "scale_active" &&
+    displayWords.length === 1
+      ? computePopScale(
+          currentMs - displayWords[0].start_ms,
+          displayWords[0].end_ms - displayWords[0].start_ms,
+        )
+      : null;
 
   // --- Buat Konten (Kotak atau Teks Biasa) ---
   const content = document.createElement("span");
@@ -332,6 +369,10 @@ export function renderPreview(container, words, currentMs, settings) {
   content.style.display = "inline-block";
   content.style.position = "relative";
   content.style.zIndex = "2";
+  if (popScale !== null) {
+    content.style.transform = `scale(${popScale})`;
+    content.style.transformOrigin = "50% 100%";
+  }
   content.classList.add("is-draggable");
   content.style.setProperty(
     "max-width",
@@ -402,6 +443,9 @@ export function renderPreview(container, words, currentMs, settings) {
       getCaptionVisualOutset(metrics),
     );
     applyCaptionPosition(content, position);
+    if (popScale !== null) {
+      content.style.transform = `translate(-50%, -50%) scale(${popScale})`;
+    }
   }
 
   return true;

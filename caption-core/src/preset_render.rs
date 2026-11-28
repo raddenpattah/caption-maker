@@ -5,7 +5,13 @@
 //! Semua ukuran preset dalam piksel acuan sisi pendek 1080.
 
 use crate::model::{Group, WordsPerLine};
-use crate::preset::{Emphasis, StylePreset};
+use crate::preset::{Animation, Emphasis, StylePreset};
+
+const POP_START_SCALE: u32 = 85;
+const POP_OVERSHOOT_SCALE: u32 = 108;
+const POP_UP_MS: u32 = 90;
+const POP_TOTAL_MS: u32 = 160;
+const POP_MIN_DURATION_MS: u32 = 40;
 
 /// Posisi anchor tengah caption sebagai persentase dari PlayRes.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -94,6 +100,24 @@ fn timestamp(ms: u32) -> String {
     let s = (cs % 6_000) / 100;
     let centi = cs % 100;
     format!("{h}:{m:02}:{s:02}.{centi:02}")
+}
+
+fn pop_tags(preset: &StylePreset, group: &Group, start_ms: u32, end_ms: u32) -> String {
+    let duration_ms = end_ms.saturating_sub(start_ms);
+    if preset.animation != Animation::Pop
+        || group.words.len() != 1
+        || preset.emphasis == Emphasis::ScaleActive
+        || duration_ms < POP_MIN_DURATION_MS
+    {
+        return String::new();
+    }
+
+    let total_ms = duration_ms.min(POP_TOTAL_MS);
+    let up_ms =
+        (f64::from(total_ms) * f64::from(POP_UP_MS) / f64::from(POP_TOTAL_MS)).round() as u32;
+    format!(
+        "{{\\fscx{POP_START_SCALE}\\fscy{POP_START_SCALE}\\t(0,{up_ms},\\fscx{POP_OVERSHOOT_SCALE}\\fscy{POP_OVERSHOOT_SCALE})\\t({up_ms},{total_ms},\\fscx100\\fscy100)}}"
+    )
 }
 
 /// Bangun teks satu grup dengan seluruh kata, kata ke-`active` diberi override.
@@ -235,10 +259,12 @@ pub fn render_ass_with_preset(
                     Emphasis::Fill => build_fill_text(preset, group, &geometry),
                     _ => build_group_text(preset, group, None),
                 };
+                let pop = pop_tags(preset, group, group.start_ms(), group.end_ms());
                 out.push_str(&format!(
-                    "Dialogue: 1,{},{},Default,,0,0,0,,{}{}\n",
+                    "Dialogue: 1,{},{},Default,,0,0,0,,{}{}{}\n",
                     timestamp(group.start_ms()),
                     timestamp(group.end_ms()),
+                    pop,
                     position_override,
                     text
                 ));
@@ -262,11 +288,13 @@ pub fn render_ass_with_preset(
                             &position_override,
                         );
                     }
+                    let pop = pop_tags(preset, group, start, end);
                     let text = build_group_text(preset, group, Some(i));
                     out.push_str(&format!(
-                        "Dialogue: 1,{},{},Default,,0,0,0,,{}{}\n",
+                        "Dialogue: 1,{},{},Default,,0,0,0,,{}{}{}\n",
                         timestamp(start),
                         timestamp(end),
+                        pop,
                         position_override,
                         text
                     ));
@@ -315,11 +343,12 @@ fn render_glow_events(
     let c = ass_color_from_hex(&g.color).unwrap_or("&H00000000&".into());
     let r = (f64::from(g.radius) * geometry.scale()).round() as u32;
     let text = build_group_text(preset, group, None);
+    let pop = pop_tags(preset, group, group.start_ms(), group.end_ms());
     out.push_str(&format!(
-        "Dialogue: 0,{},{},Default,,0,0,0,,{}{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
+        "Dialogue: 0,{},{},Default,,0,0,0,,{}{position_override}{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
         timestamp(group.start_ms()),
         timestamp(group.end_ms()),
-        position_override,
+        pop,
     ));
 }
 
@@ -336,10 +365,11 @@ fn render_glow_single(
     let c = ass_color_from_hex(&g.color).unwrap_or("&H00000000&".into());
     let r = (f64::from(g.radius) * geometry.scale()).round() as u32;
     let text = build_group_text(preset, group, None);
+    let pop = pop_tags(preset, group, start, end);
     out.push_str(&format!(
-        "Dialogue: 0,{},{},Default,,0,0,0,,{}{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
+        "Dialogue: 0,{},{},Default,,0,0,0,,{}{position_override}{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
         timestamp(start),
         timestamp(end),
-        position_override,
+        pop,
     ));
 }

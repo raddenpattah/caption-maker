@@ -1,7 +1,7 @@
 //! Tes unit untuk `commands.rs` — logika murni tanpa runtime Tauri.
 
 use crate::commands::*;
-use caption_core::preset::Emphasis;
+use caption_core::preset::{Animation, Emphasis};
 
 #[test]
 fn list_models_reports_catalog_and_installed_quantized_files() {
@@ -278,6 +278,28 @@ fn list_presets_returns_12() {
     );
     let boxed_json = serde_json::to_value(boxed).unwrap();
     assert_eq!(boxed_json["box"]["color"].as_str(), Some("#FFE14D"));
+}
+
+#[test]
+fn list_presets_includes_animation_and_serializes_its_name() {
+    let presets = list_presets_impl().unwrap();
+    for preset in presets {
+        let expected = if preset.id == "kata-tebal-putih" {
+            Animation::Pop
+        } else {
+            Animation::None
+        };
+        assert_eq!(preset.animation, expected, "{}", preset.id);
+        let json = serde_json::to_value(&preset).unwrap();
+        assert_eq!(
+            json["animation"],
+            if expected == Animation::Pop {
+                "pop"
+            } else {
+                "none"
+            }
+        );
+    }
 }
 
 #[test]

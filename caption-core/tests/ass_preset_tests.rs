@@ -1,5 +1,5 @@
 use caption_core::model::{Group, Word, WordsPerLine};
-use caption_core::preset::find_preset;
+use caption_core::preset::{find_preset, Animation, Emphasis};
 use caption_core::preset_render::{
     ass_color_from_hex, render_ass_with_preset, CaptionPosition, PresetOptions, VideoGeometry,
 };
@@ -370,6 +370,138 @@ fn fontname_matches_preset() {
         .find(|l| l.starts_with("Style: Default,"))
         .unwrap();
     assert!(style.contains(",Anton,"), "Fontname harus Anton: {style}");
+}
+
+#[test]
+fn pop_events_start_with_exact_tags_and_validate() {
+    let preset = find_preset("kata-tebal-putih").unwrap();
+    let ass = render_ass_with_preset(&words_3(), &preset, portrait(), &PresetOptions::default());
+    let expected = r"{\fscx85\fscy85\t(0,90,\fscx108\fscy108)\t(90,160,\fscx100\fscy100)}";
+    let events = dialogue_lines(&ass);
+    assert_eq!(events.len(), 3);
+    for event in events {
+        let text = event.splitn(10, ',').nth(9).unwrap();
+        assert!(
+            text.starts_with(expected),
+            "pop harus menjadi blok override pertama: {event}"
+        );
+    }
+    assert!(validate_ass(&ass).is_valid());
+}
+
+#[test]
+fn pop_tag_uses_event_duration_and_skips_short_events() {
+    let preset = find_preset("kata-tebal-putih").unwrap();
+    let render_duration = |duration_ms: u32| {
+        let group = Group {
+            words: vec![Word {
+                text: "pop".into(),
+                start_ms: 1000,
+                end_ms: 1000 + duration_ms,
+            }],
+        };
+        let ass = render_ass_with_preset(&[group], &preset, portrait(), &PresetOptions::default());
+        dialogue_lines(&ass)[0].to_owned()
+    };
+
+    let hundred_ms = render_duration(100);
+    assert!(hundred_ms
+        .contains(r"{\fscx85\fscy85\t(0,56,\fscx108\fscy108)\t(56,100,\fscx100\fscy100)}"));
+    let thirty_ms = render_duration(30);
+    assert!(!thirty_ms.contains(r"\fscx85"));
+}
+
+#[test]
+fn pop_is_disabled_for_non_pop_mult_word_and_scale_active_cases() {
+    let words_two = vec![Group {
+        words: vec![
+            Word {
+                text: "satu".into(),
+                start_ms: 1000,
+                end_ms: 1500,
+            },
+            Word {
+                text: "dua".into(),
+                start_ms: 1500,
+                end_ms: 2100,
+            },
+        ],
+    }];
+
+    let mut no_animation = find_preset("kata-bangers").unwrap();
+    no_animation.words_per_line = 1;
+    let ass = render_ass_with_preset(
+        &words_two,
+        &no_animation,
+        portrait(),
+        &PresetOptions::default(),
+    );
+    assert!(dialogue_lines(&ass)
+        .iter()
+        .all(|event| !event.contains(r"\fscx85")));
+
+    let pop = find_preset("kata-tebal-putih").unwrap();
+    let override_two = PresetOptions {
+        words_per_line: Some(WordsPerLine::Two),
+        ..PresetOptions::default()
+    };
+    let ass = render_ass_with_preset(&words_two, &pop, portrait(), &override_two);
+    assert!(dialogue_lines(&ass)
+        .iter()
+        .all(|event| !event.contains(r"\fscx85")));
+
+    let mut scale_active = find_preset("tekan-besar").unwrap();
+    scale_active.animation = Animation::Pop;
+    let ass = render_ass_with_preset(
+        &words_two,
+        &scale_active,
+        portrait(),
+        &PresetOptions {
+            words_per_line: Some(WordsPerLine::One),
+            ..PresetOptions::default()
+        },
+    );
+    assert!(dialogue_lines(&ass)
+        .iter()
+        .all(|event| !event.contains(r"\fscx85")));
+    assert_eq!(scale_active.emphasis, Emphasis::ScaleActive);
+}
+
+#[test]
+fn glow_and_primary_events_both_receive_pop_tags() {
+    let mut preset = find_preset("baris-neon-mint").unwrap();
+    preset.animation = Animation::Pop;
+    let ass = render_ass_with_preset(
+        &words_3(),
+        &preset,
+        portrait(),
+        &PresetOptions {
+            words_per_line: Some(WordsPerLine::One),
+            ..PresetOptions::default()
+        },
+    );
+    let expected_start = r"{\fscx85\fscy85\t(0,90,\fscx108\fscy108)\t(90,160,\fscx100\fscy100)}";
+    let events = dialogue_lines(&ass);
+    let layer0: Vec<_> = events
+        .iter()
+        .filter(|event| event.starts_with("Dialogue: 0,"))
+        .collect();
+    let layer1: Vec<_> = events
+        .iter()
+        .filter(|event| event.starts_with("Dialogue: 1,"))
+        .collect();
+    assert_eq!(layer0.len(), 3);
+    assert_eq!(layer1.len(), 3);
+    for event in layer0.into_iter().chain(layer1) {
+        assert!(
+            event
+                .splitn(10, ',')
+                .nth(9)
+                .unwrap()
+                .starts_with(expected_start),
+            "tag pop harus mendahului tag layer lain: {event}"
+        );
+    }
 }
 
 #[test]

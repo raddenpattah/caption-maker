@@ -42,6 +42,15 @@ pub struct PresetGlow {
     pub radius: u32,
 }
 
+/// Animasi saat kata caption mulai tampil.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Animation {
+    #[default]
+    None,
+    Pop,
+}
+
 /// Mode penekanan kata.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -88,6 +97,8 @@ pub struct StylePreset {
     pub glow: Option<PresetGlow>,
     pub emphasis: Emphasis,
     pub emphasis_scale: Option<u32>,
+    #[serde(default)]
+    pub animation: Animation,
     pub words_per_line: u8,
     pub alignment: u8,
     pub margin_v: u32,
