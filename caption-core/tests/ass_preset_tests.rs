@@ -390,6 +390,35 @@ fn pop_events_start_with_exact_tags_and_validate() {
 }
 
 #[test]
+fn kata_kotak_merah_pop_and_box_shadow_are_rendered() {
+    let preset = find_preset("kata-kotak-merah").unwrap();
+    let ass = render_ass_with_preset(&words_3(), &preset, portrait(), &PresetOptions::default());
+    let style = ass
+        .lines()
+        .find(|line| line.starts_with("Style: Default,"))
+        .unwrap();
+    let fields: Vec<_> = style.splitn(23, ',').collect();
+    assert_eq!(fields[15], "3", "kotak harus memakai BorderStyle 3");
+    assert_eq!(fields[17], "6", "Shadow harus 6");
+    assert_eq!(
+        fields[6],
+        ass_color_from_hex("#000000A0").unwrap(),
+        "BackColour harus berasal dari warna shadow preset"
+    );
+
+    let expected_pop = r"{\fscx85\fscy85\t(0,90,\fscx108\fscy108)\t(90,160,\fscx100\fscy100)}";
+    let events = dialogue_lines(&ass);
+    assert_eq!(events.len(), 3);
+    for event in events {
+        let text = event.splitn(10, ',').nth(9).unwrap();
+        assert!(
+            text.starts_with(expected_pop),
+            "setiap event kotak merah harus dimulai dengan tag pop: {event}"
+        );
+    }
+}
+
+#[test]
 fn pop_tag_uses_event_duration_and_skips_short_events() {
     let preset = find_preset("kata-tebal-putih").unwrap();
     let render_duration = |duration_ms: u32| {

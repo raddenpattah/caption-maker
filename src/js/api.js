@@ -240,9 +240,9 @@ export async function listPresets() {
     {
       id: "kata-kotak-merah", name: "Kata Kotak Merah", category: "kata_per_kata", words_per_line: 1,
       font: { family: "Poppins ExtraBold", file: "Poppins-ExtraBold.ttf", size: 88, bold: false, italic: false, uppercase: true, letter_spacing: 0 },
-      colors: { text: "#FFFFFF", highlight: "#FFE14D", outline: "#8B0A3C", shadow: "#00000000" },
-      outline: 18, shadow: 0, box: { color: "#8B0A3C", padding: 22 }, margin_v: 450, margin_lr: 80,
-      glow: null, emphasis: "none", emphasis_scale: null, animation: "none",
+      colors: { text: "#FFFFFF", highlight: "#FFE14D", outline: "#8B0A3C", shadow: "#000000A0" },
+      outline: 18, shadow: 6, box: { color: "#8B0A3C", padding: 22 }, margin_v: 450, margin_lr: 80,
+      glow: null, emphasis: "none", emphasis_scale: null, animation: "pop",
     },
     {
       id: "kata-anton-kuning", name: "Kata Anton Kuning", category: "kata_per_kata", words_per_line: 1,

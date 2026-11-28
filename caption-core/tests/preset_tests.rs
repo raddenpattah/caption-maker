@@ -111,11 +111,11 @@ fn animation_defaults_to_none_and_rejects_unknown_values() {
 }
 
 #[test]
-fn only_kata_tebal_putih_has_pop_animation() {
+fn kata_one_word_presets_have_pop_animation() {
     for preset in builtin_presets().unwrap() {
         assert_eq!(
             preset.animation,
-            if preset.id == "kata-tebal-putih" {
+            if ["kata-tebal-putih", "kata-kotak-merah"].contains(&preset.id.as_str()) {
                 Animation::Pop
             } else {
                 Animation::None

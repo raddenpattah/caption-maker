@@ -15,15 +15,16 @@
     "text": "#FFFFFF",
     "highlight": "#FFE14D",
     "outline": "#8B0A3C",
-    "shadow": "#00000000"
+    "shadow": "#000000A0"
   },
   "outline": 18,
-  "shadow": 0,
+  "shadow": 6,
   "blur": 0,
   "box": { "color": "#8B0A3C", "padding": 22 },
   "glow": null,
   "emphasis": "none",
   "emphasis_scale": null,
+  "animation": "pop",
   "words_per_line": 1,
   "alignment": 2,
   "margin_v": 450,
