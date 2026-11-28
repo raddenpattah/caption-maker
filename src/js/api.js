@@ -246,10 +246,10 @@ export async function listPresets() {
     },
     {
       id: "kata-anton-kuning", name: "Kata Anton Kuning", category: "kata_per_kata", words_per_line: 1,
-      font: { family: "Anton", file: "Anton-Regular.ttf", size: 104, bold: false, italic: false, uppercase: true, letter_spacing: 1 },
+      font: { family: "Anton", file: "Anton-Regular.ttf", size: 98, bold: false, italic: false, uppercase: true, letter_spacing: 1 },
       colors: { text: "#FFD400", highlight: "#FFFFFF", outline: "#000000", shadow: "#00000080" },
-      outline: 8, shadow: 5, box: null, margin_v: 450, margin_lr: 80,
-      glow: null, emphasis: "none", emphasis_scale: null, animation: "none",
+      outline: 8, shadow: 7, box: null, margin_v: 450, margin_lr: 80,
+      glow: null, emphasis: "none", emphasis_scale: null, animation: "pop",
     },
     {
       id: "kata-bangers", name: "Kata Bangers", category: "kata_per_kata", words_per_line: 1,

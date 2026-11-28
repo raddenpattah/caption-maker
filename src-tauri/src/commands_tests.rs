@@ -284,7 +284,9 @@ fn list_presets_returns_12() {
 fn list_presets_includes_animation_and_serializes_its_name() {
     let presets = list_presets_impl().unwrap();
     for preset in presets {
-        let expected = if ["kata-tebal-putih", "kata-kotak-merah"].contains(&preset.id.as_str()) {
+        let expected = if ["kata-tebal-putih", "kata-kotak-merah", "kata-anton-kuning"]
+            .contains(&preset.id.as_str())
+        {
             Animation::Pop
         } else {
             Animation::None

@@ -13,6 +13,22 @@ import {
   loadPreviewFont,
   moveCaptionPosition,
 } from "../js/preview.js";
+import { listPresets } from "../js/api.js";
+
+test("mock preset Anton Kuning memakai font, shadow, dan pop yang diperbarui", async () => {
+  const presets = await listPresets();
+  const anton = presets.find((preset) => preset.id === "kata-anton-kuning");
+
+  assert.ok(anton);
+  assert.equal(anton.font.family, "Anton");
+  assert.equal(anton.font.file, "Anton-Regular.ttf");
+  assert.equal(anton.font.size, 98);
+  assert.equal(anton.colors.text, "#FFD400");
+  assert.equal(anton.colors.shadow, "#00000080");
+  assert.equal(anton.outline, 8);
+  assert.equal(anton.shadow, 7);
+  assert.equal(anton.animation, "pop");
+});
 
 test("menghitung skala animasi pop sesuai keyframe", () => {
   assert.equal(computePopScale(0, 300), 0.85);

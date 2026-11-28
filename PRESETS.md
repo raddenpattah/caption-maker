@@ -47,12 +47,13 @@ Data berikut disalin dari berkas JSON di `caption-core/presets/` dan diurutkan b
 - **Layout**: alignment 2; margin_v 450; margin_lr 80
 
 ## Kata Anton Kuning (id: `kata-anton-kuning`)
-- **Font**: Anton; file `Anton-Regular.ttf`; size 104; bold `false`; italic `false`; uppercase `true`; letter_spacing 1
+- **Font**: Anton; file `Anton-Regular.ttf`; size 98; bold `false`; italic `false`; uppercase `true`; letter_spacing 1
 - **Colors**: text `#FFD400`; highlight `#FFFFFF`; outline `#000000`; shadow `#00000080`
-- **Outline**: 8; **Shadow**: 5; **Blur**: 0
+- **Outline**: 8; **Shadow**: 7; **Blur**: 0
 - **Box**: `null`
 - **Glow**: `null`
 - **Emphasis**: `none`; emphasis_scale `null`
+- **Animation**: `pop`
 - **Words per line**: 1
 - **Category**: `kata_per_kata`
 - **Layout**: alignment 2; margin_v 450; margin_lr 80

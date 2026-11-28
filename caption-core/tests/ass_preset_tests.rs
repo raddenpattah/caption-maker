@@ -392,6 +392,46 @@ fn fontname_matches_preset() {
 }
 
 #[test]
+fn kata_anton_kuning_style_and_pop_are_rendered() {
+    let preset = find_preset("kata-anton-kuning").unwrap();
+    let ass = render_ass_with_preset(&words_3(), &preset, portrait(), &PresetOptions::default());
+    let style = ass
+        .lines()
+        .find(|line| line.starts_with("Style: Default,"))
+        .unwrap();
+    let fields: Vec<_> = style.splitn(23, ',').collect();
+
+    assert_eq!(fields[1], "Anton");
+    assert_eq!(fields[2], "98");
+    assert_eq!(fields[3], ass_color_from_hex("#FFD400").unwrap());
+    assert_eq!(fields[5], ass_color_from_hex("#000000").unwrap());
+    assert_eq!(fields[6], ass_color_from_hex("#00000080").unwrap());
+    assert_eq!(fields[7], "0");
+    assert_eq!(fields[13], "1");
+    assert_eq!(fields[16], "8");
+    assert_eq!(fields[17], "7");
+    assert_eq!(fields[18], "2");
+    assert_eq!(fields[19], "80");
+    assert_eq!(fields[20], "80");
+    assert_eq!(fields[21], "450");
+
+    let expected_pop = r"{\fscx85\fscy85\t(0,90,\fscx108\fscy108)\t(90,160,\fscx100\fscy100)}";
+    let events = dialogue_lines(&ass);
+    assert_eq!(events.len(), 3);
+    for event in events {
+        assert!(
+            event
+                .splitn(10, ',')
+                .nth(9)
+                .unwrap()
+                .starts_with(expected_pop),
+            "setiap event Anton harus diawali tag pop: {event}"
+        );
+    }
+    assert!(validate_ass(&ass).is_valid());
+}
+
+#[test]
 fn pop_events_start_with_exact_tags_and_validate() {
     let preset = find_preset("kata-tebal-putih").unwrap();
     let ass = render_ass_with_preset(&words_3(), &preset, portrait(), &PresetOptions::default());

@@ -115,7 +115,9 @@ fn kata_one_word_presets_have_pop_animation() {
     for preset in builtin_presets().unwrap() {
         assert_eq!(
             preset.animation,
-            if ["kata-tebal-putih", "kata-kotak-merah"].contains(&preset.id.as_str()) {
+            if ["kata-tebal-putih", "kata-kotak-merah", "kata-anton-kuning",]
+                .contains(&preset.id.as_str())
+            {
                 Animation::Pop
             } else {
                 Animation::None
@@ -124,4 +126,33 @@ fn kata_one_word_presets_have_pop_animation() {
             preset.id
         );
     }
+}
+
+#[test]
+fn kata_anton_kuning_keeps_customized_style_values() {
+    let preset = find_preset("kata-anton-kuning").unwrap();
+
+    assert_eq!(preset.font.family, "Anton");
+    assert_eq!(preset.font.file, "Anton-Regular.ttf");
+    assert_eq!(preset.font.size, 98);
+    assert!(!preset.font.bold);
+    assert!(!preset.font.italic);
+    assert!(preset.font.uppercase);
+    assert_eq!(preset.font.letter_spacing, 1);
+    assert_eq!(preset.colors.text, "#FFD400");
+    assert_eq!(preset.colors.highlight, "#FFFFFF");
+    assert_eq!(preset.colors.outline, "#000000");
+    assert_eq!(preset.colors.shadow, "#00000080");
+    assert_eq!(preset.outline, 8);
+    assert_eq!(preset.shadow, 7);
+    assert_eq!(preset.blur, 0);
+    assert_eq!(preset.animation, Animation::Pop);
+    assert_eq!(preset.emphasis, Emphasis::None);
+    assert_eq!(preset.emphasis_scale, None);
+    assert_eq!(preset.words_per_line, 1);
+    assert_eq!(preset.alignment, 2);
+    assert_eq!(preset.margin_v, 450);
+    assert_eq!(preset.margin_lr, 80);
+    assert_eq!(preset.box_, None);
+    assert_eq!(preset.glow, None);
 }

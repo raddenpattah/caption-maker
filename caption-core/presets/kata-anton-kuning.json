@@ -5,7 +5,7 @@
   "font": {
     "family": "Anton",
     "file": "Anton-Regular.ttf",
-    "size": 104,
+    "size": 98,
     "bold": false,
     "italic": false,
     "uppercase": true,
@@ -18,12 +18,13 @@
     "shadow": "#00000080"
   },
   "outline": 8,
-  "shadow": 5,
+  "shadow": 7,
   "blur": 0,
   "box": null,
   "glow": null,
   "emphasis": "none",
   "emphasis_scale": null,
+  "animation": "pop",
   "words_per_line": 1,
   "alignment": 2,
   "margin_v": 450,
