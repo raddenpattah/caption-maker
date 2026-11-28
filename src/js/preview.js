@@ -379,3 +379,124 @@ export function renderPreview(container, words, currentMs, settings) {
 
 
 
+
+// ============================================================
+// libass-wasm Preview Renderer (POC Integration)
+// ============================================================
+// Renderer ini menggunakan libass-wasm (Jellyfin) untuk menampilkan
+// subtitle ASS secara akurat. Fallback ke CSS jika wasm gagal load.
+
+let libassRenderer = null;
+let libassReady = false;
+let libassInitPromise = null;
+let currentAssContent = null;
+
+export async function initLibassPreview(canvasId = "preview-canvas") {
+  if (libassInitPromise) return libassInitPromise;
+
+  libassInitPromise = (async () => {
+    try {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas) throw new Error("Canvas tidak ditemukan: " + canvasId);
+
+      if (typeof window.SubtitlesOctopus !== "function") {
+        throw new Error("SubtitlesOctopus belum dimuat. Cek <script> libass-wasm di index.html.");
+      }
+
+      const workerUrl = new URL("../vendor/libass-wasm/subtitles-octopus-worker.js", import.meta.url).href;
+      const legacyWorkerUrl = new URL("../vendor/libass-wasm/subtitles-octopus-worker-legacy.js", import.meta.url).href;
+      const fontUrl = new URL("../assets/fonts/Poppins-ExtraBold.ttf", import.meta.url).href;
+      const emptyAssTrack = `[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Poppins ExtraBold,104,&H00FFFFFF,&H00FFFFFF,&H00000000,&H80000000,-1,0,0,0,100,100,0,0,1,8,4,2,80,80,450,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`;
+
+      libassRenderer = new window.SubtitlesOctopus({
+        canvas,
+        workerUrl,
+        legacyWorkerUrl,
+        subContent: emptyAssTrack,
+        fonts: [fontUrl],
+        availableFonts: {
+          "poppins extrabold": fontUrl,
+          "poppins": fontUrl,
+          "anton": fontUrl,
+          "bangers": fontUrl,
+        },
+        onReady: () => {
+          libassReady = true;
+          canvas.classList.add("is-active");
+          console.log("libass-wasm siap.");
+          if (currentAssContent) {
+            libassRenderer.setTrack(currentAssContent);
+          }
+        },
+        onError: (err) => {
+          console.error("libass-wasm error:", err);
+          libassReady = false;
+          canvas.classList.remove("is-active");
+        },
+      });
+
+      return libassRenderer;
+    } catch (err) {
+      console.error("Gagal inisialisasi libass-wasm:", err);
+      libassReady = false;
+      throw err;
+    }
+  })();
+
+  return libassInitPromise;
+}
+
+export function isLibassReady() {
+  return libassReady;
+}
+
+export function setAssContent(assText) {
+  currentAssContent = assText;
+  if (!libassRenderer || !libassReady) return;
+  try {
+    libassRenderer.setTrack(assText);
+  } catch (err) {
+    console.error("Gagal setSubtitles:", err);
+  }
+}
+
+export function setCurrentTime(seconds) {
+  if (!libassRenderer || !libassReady) return;
+  try {
+    libassRenderer.setCurrentTime(seconds);
+  } catch (err) {
+    // Abaikan error kecil saat transisi
+  }
+}
+
+export function resizeLibassCanvas(width, height) {
+  const canvas = document.getElementById("preview-canvas");
+  if (!canvas) return;
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+    if (libassRenderer && libassRenderer.resize) {
+      try { libassRenderer.resize(width, height, 0); } catch (e) {}
+    }
+  }
+}
+
+export function disposeLibass() {
+  if (libassRenderer && libassRenderer.dispose) {
+    try { libassRenderer.dispose(); } catch (e) {}
+  }
+  libassRenderer = null;
+  libassReady = false;
+  libassInitPromise = null;
+  currentAssContent = null;
+}

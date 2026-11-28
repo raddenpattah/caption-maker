@@ -18,12 +18,17 @@ import {
   getCaptionVisualOutset,
   getVideoRect,
   groupWords,
+  initLibassPreview,
+  isLibassReady,
+  setAssContent,
+  setCurrentTime,
+  resizeLibassCanvas,
   loadPreviewFont,
   moveCaptionPosition,
   renderPreview,
 } from "./preview.js";
 import { createState } from "./state.js";
-import { isTauri } from "./tauri-bridge.js";
+import { invoke, isTauri } from "./tauri-bridge.js";
 import {
   applyGroupText,
   deleteWord,
@@ -45,6 +50,35 @@ function updateStageAspectRatio(videoElement) {
 }
 
 const state = createState();
+
+// Render ASS dari backend dan kirim ke libass-wasm
+async function renderAssForLibass(words) {
+  if (!words || words.length === 0) return;
+  const preset = selectedPreset();
+  if (!preset) return;
+  try {
+    const result = await invoke("render_ass_from_words", {
+      req: {
+        words: words.map((w) => ({
+          text: w.text,
+          start_ms: w.start_ms,
+          end_ms: w.end_ms,
+        })),
+        preset_id: preset.id,
+        width: 1080,
+        height: 1920,
+        words_per_line: effectiveWordsPerLine(),
+        caption_position: null,
+      },
+    });
+    if (result?.ass) {
+      setAssContent(result.ass);
+    }
+  } catch (err) {
+    console.warn("[main] Gagal generate ASS untuk libass:", err);
+  }
+}
+
 const byId = (id) => document.getElementById(id);
 const video = byId("video-player");
 const audio = byId("audio-player");
@@ -520,6 +554,10 @@ function onMediaTimeUpdate() {
   const currentMs = Math.round(element.currentTime * 1000);
   state.update({ currentMs });
   updateClock(currentMs);
+  // Sinkronisasi waktu dengan libass-wasm
+  if (isLibassReady()) {
+    setCurrentTime(currentMs / 1000);
+  }
 }
 
 function pauseInternalTimer() {
@@ -878,6 +916,12 @@ async function generateSubtitles() {
       edited: false,
       generated: true});
     renderPreviewText();
+    // Update libass-wasm saat transkripsi selesai
+    if (isLibassReady()) {
+      renderAssForLibass(words).catch((err) =>
+        console.warn("[main] Gagal render ASS ke libass:", err),
+      );
+    }
     renderWordEditor();
     updatePreviewTag();
     updateAvailability();
@@ -1635,5 +1679,10 @@ byId("settings-disclaimer").textContent = isTauri()
 updateClock(0);
 loadModels();
 loadPresets();
+
+// Inisialisasi libass-wasm untuk preview (fallback ke CSS jika gagal)
+initLibassPreview()
+  .then(() => console.log('[main] libass-wasm siap untuk preview'))
+  .catch((err) => console.warn('[main] libass-wasm gagal, fallback ke CSS:', err));
 
 

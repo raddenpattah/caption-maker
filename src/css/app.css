@@ -1569,3 +1569,24 @@ details.advanced-settings .advanced-content {
   -webkit-user-select: none;
 }
 
+
+/* ---------- Canvas overlay untuk libass-wasm ---------- */
+.preview-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+  display: none; /* disembunyikan sampai libass-wasm siap */
+}
+
+.preview-canvas.is-active {
+  display: block;
+}
+
+/* Sembunyikan CSS subtitle saat canvas aktif */
+.preview-canvas.is-active ~ #preview-subtitle {
+  display: none;
+}

@@ -6,6 +6,7 @@
     <meta name="color-scheme" content="dark" />
     <title>Caption Maker</title>
     <link rel="stylesheet" href="./css/app.css" />
+    <script src="./vendor/libass-wasm/subtitles-octopus.js"></script>
     <script type="module" src="./js/main.js"></script>
   </head>
   <body>
@@ -70,6 +71,7 @@
             </div>
             <div class="preview-stage" id="preview-stage">
               <video id="video-player" class="media-player" playsinline hidden aria-label="Pratinjau video lokal"></video>
+              <canvas id="preview-canvas" class="preview-canvas" aria-hidden="true"></canvas>
               <audio id="audio-player" hidden aria-label="Pemutar audio lokal"></audio>
               <div id="preview-subtitle" class="subtitle-layer" aria-live="polite">
                 <span class="preview-placeholder">Pratinjau subtitle akan tampil di sini</span>
