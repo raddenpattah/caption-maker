@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  buildLibassFontOptions,
   clampCaptionPosition,
   computePreviewMetrics,
   getCaptionPosition,
+  getLibassCanvasSize,
   getVideoRect,
   groupWords,
   loadPreviewFont,
@@ -81,6 +83,47 @@ test("memakai ukuran referensi portrait jika videoWidth nol", () => {
       { videoWidth: 0, videoHeight: 0 },
     ),
     { left: 546.875, top: 0, width: 506.25, height: 900, scale: 0.46875 },
+  );
+});
+
+test("menghitung bitmap canvas untuk rect portrait", () => {
+  assert.deepEqual(
+    getLibassCanvasSize({ width: 506.25, height: 900 }, 1),
+    { width: 506, height: 900 },
+  );
+});
+
+test("menghitung bitmap canvas untuk rect landscape", () => {
+  assert.deepEqual(
+    getLibassCanvasSize({ width: 1200, height: 675 }, 1),
+    { width: 1200, height: 675 },
+  );
+});
+
+test("menghitung bitmap canvas dengan DPR 2", () => {
+  assert.deepEqual(
+    getLibassCanvasSize({ width: 506.25, height: 900 }, 2),
+    { width: 1013, height: 1800 },
+  );
+});
+
+test("memetakan setiap family libass ke file font yang sesuai", () => {
+  assert.deepEqual(
+    buildLibassFontOptions(new URL("https://example.test/assets/fonts/")),
+    {
+      fonts: [
+        "https://example.test/assets/fonts/Poppins-ExtraBold.ttf",
+        "https://example.test/assets/fonts/Poppins-Bold.ttf",
+        "https://example.test/assets/fonts/Anton-Regular.ttf",
+        "https://example.test/assets/fonts/Bangers-Regular.ttf",
+      ],
+      availableFonts: {
+        "poppins extrabold": "https://example.test/assets/fonts/Poppins-ExtraBold.ttf",
+        "poppins": "https://example.test/assets/fonts/Poppins-Bold.ttf",
+        "anton": "https://example.test/assets/fonts/Anton-Regular.ttf",
+        "bangers": "https://example.test/assets/fonts/Bangers-Regular.ttf",
+      },
+    },
   );
 });
 

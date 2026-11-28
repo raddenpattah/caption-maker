@@ -64,6 +64,36 @@ export function getVideoRect(stage, video) {
   };
 }
 
+export function getLibassCanvasSize(rect, devicePixelRatio = 1) {
+  const dpr = Number.isFinite(devicePixelRatio) && devicePixelRatio > 0
+    ? Math.min(devicePixelRatio, 2)
+    : 1;
+
+  return {
+    width: Math.round(rect.width * dpr),
+    height: Math.round(rect.height * dpr),
+  };
+}
+
+export function buildLibassFontOptions(baseUrl) {
+  const fontEntries = [
+    ["poppins extrabold", "Poppins-ExtraBold.ttf"],
+    ["poppins", "Poppins-Bold.ttf"],
+    ["anton", "Anton-Regular.ttf"],
+    ["bangers", "Bangers-Regular.ttf"],
+  ];
+  const fonts = [];
+  const availableFonts = {};
+
+  for (const [family, filename] of fontEntries) {
+    const url = new URL(filename, baseUrl).href;
+    fonts.push(url);
+    availableFonts[family] = url;
+  }
+
+  return { fonts, availableFonts };
+}
+
 function validateCaptionRect(videoRect, blockRect) {
   if (
     !Number.isFinite(videoRect?.left) ||
@@ -381,20 +411,26 @@ export function renderPreview(container, words, currentMs, settings) {
 
 
 // ============================================================
-// libass-wasm Preview Renderer (POC Integration)
+// libass-wasm Preview Renderer
 // ============================================================
-// Renderer ini menggunakan libass-wasm (Jellyfin) untuk menampilkan
-// subtitle ASS secara akurat. Fallback ke CSS jika wasm gagal load.
 
 let libassRenderer = null;
 let libassReady = false;
 let libassInitPromise = null;
 let currentAssContent = null;
 
-export async function initLibassPreview(canvasId = "preview-canvas") {
+function deactivateLibassPreview() {
+  libassReady = false;
+  const canvas = document.getElementById("preview-canvas");
+  if (!canvas) return;
+  canvas.classList.remove("is-active");
+  canvas.dispatchEvent(new Event("libass-error"));
+}
+
+export function initLibassPreview(canvasId = "preview-canvas") {
   if (libassInitPromise) return libassInitPromise;
 
-  libassInitPromise = (async () => {
+  libassInitPromise = new Promise((resolve, reject) => {
     try {
       const canvas = document.getElementById(canvasId);
       if (!canvas) throw new Error("Canvas tidak ditemukan: " + canvasId);
@@ -405,7 +441,8 @@ export async function initLibassPreview(canvasId = "preview-canvas") {
 
       const workerUrl = new URL("../vendor/libass-wasm/subtitles-octopus-worker.js", import.meta.url).href;
       const legacyWorkerUrl = new URL("../vendor/libass-wasm/subtitles-octopus-worker-legacy.js", import.meta.url).href;
-      const fontUrl = new URL("../assets/fonts/Poppins-ExtraBold.ttf", import.meta.url).href;
+      const fontsBaseUrl = new URL("../assets/fonts/", import.meta.url);
+      const { fonts, availableFonts } = buildLibassFontOptions(fontsBaseUrl);
       const emptyAssTrack = `[Script Info]
 ScriptType: v4.00+
 PlayResX: 1080
@@ -423,35 +460,53 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text`
         workerUrl,
         legacyWorkerUrl,
         subContent: emptyAssTrack,
-        fonts: [fontUrl],
-        availableFonts: {
-          "poppins extrabold": fontUrl,
-          "poppins": fontUrl,
-          "anton": fontUrl,
-          "bangers": fontUrl,
-        },
+        fonts,
+        availableFonts,
         onReady: () => {
-          libassReady = true;
-          canvas.classList.add("is-active");
-          console.log("libass-wasm siap.");
-          if (currentAssContent) {
-            libassRenderer.setTrack(currentAssContent);
+          try {
+            libassReady = true;
+            if (currentAssContent) {
+              libassRenderer.setTrack(currentAssContent);
+            }
+
+            const stage = document.getElementById("preview-stage");
+            const video = document.getElementById("video-player");
+            if (
+              stage &&
+              !resizeLibassCanvas(getVideoRect(stage, video && !video.hidden ? video : null))
+            ) {
+              reject(new Error("Gagal mengubah ukuran canvas libass-wasm."));
+              return;
+            }
+
+            canvas.classList.add("is-active");
+            console.log("libass-wasm siap.");
+            resolve(libassRenderer);
+          } catch (error) {
+            deactivateLibassPreview();
+            console.error("Gagal menyiapkan preview libass-wasm:", error);
+            reject(error);
           }
         },
-        onError: (err) => {
-          console.error("libass-wasm error:", err);
-          libassReady = false;
-          canvas.classList.remove("is-active");
+        onError: (event) => {
+          console.error("libass-wasm error:", {
+            type: event?.type,
+            message: event?.message,
+            filename: event?.filename,
+            lineno: event?.lineno,
+            colno: event?.colno,
+            stack: event?.error?.stack,
+          });
+          deactivateLibassPreview();
+          reject(event instanceof Error ? event : new Error(event?.message || "Worker libass-wasm gagal."));
         },
       });
-
-      return libassRenderer;
-    } catch (err) {
-      console.error("Gagal inisialisasi libass-wasm:", err);
-      libassReady = false;
-      throw err;
+    } catch (error) {
+      console.error("Gagal inisialisasi libass-wasm:", error);
+      deactivateLibassPreview();
+      reject(error);
     }
-  })();
+  });
 
   return libassInitPromise;
 }
@@ -466,6 +521,7 @@ export function setAssContent(assText) {
   try {
     libassRenderer.setTrack(assText);
   } catch (err) {
+    deactivateLibassPreview();
     console.error("Gagal setSubtitles:", err);
   }
 }
@@ -474,21 +530,69 @@ export function setCurrentTime(seconds) {
   if (!libassRenderer || !libassReady) return;
   try {
     libassRenderer.setCurrentTime(seconds);
-  } catch (err) {
-    // Abaikan error kecil saat transisi
+  } catch (error) {
+    deactivateLibassPreview();
+    console.error("Gagal menyinkronkan waktu libass-wasm:", error);
   }
 }
 
-export function resizeLibassCanvas(width, height) {
+export function setIsPaused(isPaused, currentTime) {
+  if (!libassRenderer || !libassReady || typeof libassRenderer.setIsPaused !== "function") return;
+  try {
+    libassRenderer.setIsPaused(isPaused, currentTime);
+  } catch (error) {
+    deactivateLibassPreview();
+    console.error("Gagal mengubah status pause libass-wasm:", error);
+  }
+}
+
+export function setRate(rate) {
+  if (!libassRenderer || !libassReady || typeof libassRenderer.setRate !== "function") return;
+  try {
+    libassRenderer.setRate(rate);
+  } catch (error) {
+    deactivateLibassPreview();
+    console.error("Gagal mengubah playback rate libass-wasm:", error);
+  }
+}
+
+export function resizeLibassCanvas(rect) {
   const canvas = document.getElementById("preview-canvas");
-  if (!canvas) return;
+  if (
+    !canvas ||
+    !Number.isFinite(rect?.left) ||
+    !Number.isFinite(rect?.top) ||
+    !Number.isFinite(rect?.width) ||
+    !Number.isFinite(rect?.height) ||
+    rect.width <= 0 ||
+    rect.height <= 0
+  ) {
+    return true;
+  }
+
+  const { width, height } = getLibassCanvasSize(rect, window.devicePixelRatio || 1);
+  if (width <= 0 || height <= 0) return true;
+
+  canvas.style.left = `${rect.left}px`;
+  canvas.style.top = `${rect.top}px`;
+  canvas.style.width = `${rect.width}px`;
+  canvas.style.height = `${rect.height}px`;
+
   if (canvas.width !== width || canvas.height !== height) {
     canvas.width = width;
     canvas.height = height;
-    if (libassRenderer && libassRenderer.resize) {
-      try { libassRenderer.resize(width, height, 0); } catch (e) {}
+  }
+
+  if (libassRenderer && libassReady && typeof libassRenderer.resize === "function") {
+    try {
+      libassRenderer.resize(width, height, rect.top, rect.left);
+    } catch (error) {
+      deactivateLibassPreview();
+      console.error("Gagal mengubah ukuran canvas libass-wasm:", error);
+      return false;
     }
   }
+  return true;
 }
 
 export function disposeLibass() {

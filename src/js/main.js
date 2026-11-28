@@ -22,6 +22,8 @@ import {
   isLibassReady,
   setAssContent,
   setCurrentTime,
+  setIsPaused,
+  setRate,
   resizeLibassCanvas,
   loadPreviewFont,
   moveCaptionPosition,
@@ -83,6 +85,7 @@ const byId = (id) => document.getElementById(id);
 const video = byId("video-player");
 const audio = byId("audio-player");
 const previewStage = byId("preview-stage");
+const previewCanvas = byId("preview-canvas");
 const previewSubtitle = byId("preview-subtitle");
 const wordEditorList = byId("word-editor-list");
 const progressBar = byId("progress-bar");
@@ -98,6 +101,7 @@ let transcribeProgressStatus = null;
 let burnedPreviewActive = false;
 let burnedVideoPath = null;
 let internalTimer = null;
+let libassPlaybackFrame = null;
 let mediaPlayPending = false;
 let installedModelIds = new Set();
 let presetCache = [];
@@ -253,6 +257,12 @@ function currentMediaElement() {
   if (burnedPreviewActive) return video;
   const media = state.get().media;
   return media?.kind === "video" ? video : media?.kind === "audio" ? audio : null;
+}
+
+function resizeLibassPreviewCanvas() {
+  if (!previewStage) return;
+  const activeVideo = video && !video.hidden ? video : null;
+  resizeLibassCanvas(getVideoRect(previewStage, activeVideo));
 }
 
 function renderPreviewText() {
@@ -421,6 +431,7 @@ function endCaptionDrag(event) {
 function observePreviewStageResize() {
   if (previewStageResizeObserver) return;
   previewStageResizeObserver = new ResizeObserver(() => {
+    resizeLibassPreviewCanvas();
     if (!burnedPreviewActive && selectedPreset()) renderPreviewText();
   });
   previewStageResizeObserver.observe(byId("preview-stage"));
@@ -554,9 +565,61 @@ function onMediaTimeUpdate() {
   const currentMs = Math.round(element.currentTime * 1000);
   state.update({ currentMs });
   updateClock(currentMs);
-  // Sinkronisasi waktu dengan libass-wasm
-  if (isLibassReady()) {
-    setCurrentTime(currentMs / 1000);
+  syncLibassCurrentTime(element);
+}
+
+function stopLibassPlaybackSync() {
+  if (libassPlaybackFrame !== null) {
+    cancelAnimationFrame(libassPlaybackFrame);
+    libassPlaybackFrame = null;
+  }
+}
+
+function syncLibassCurrentTime(mediaElement) {
+  if (mediaElement !== currentMediaElement() || !isLibassReady()) return;
+  setCurrentTime(mediaElement.currentTime);
+}
+
+function syncLibassPlaybackState(mediaElement) {
+  if (!isLibassReady()) {
+    stopLibassPlaybackSync();
+    return;
+  }
+  if (mediaElement !== currentMediaElement()) return;
+
+  setIsPaused(mediaElement.paused, mediaElement.currentTime);
+  setRate(mediaElement.playbackRate);
+  syncLibassCurrentTime(mediaElement);
+  if (!isLibassReady()) return;
+
+  if (mediaElement.paused) {
+    stopLibassPlaybackSync();
+    return;
+  }
+
+  if (libassPlaybackFrame !== null) return;
+
+  const syncFrame = () => {
+    libassPlaybackFrame = null;
+    const activeMedia = currentMediaElement();
+    if (!isLibassReady() || !activeMedia || activeMedia.paused) {
+      stopLibassPlaybackSync();
+      return;
+    }
+
+    setCurrentTime(activeMedia.currentTime);
+    if (!isLibassReady()) return;
+    libassPlaybackFrame = requestAnimationFrame(syncFrame);
+  };
+
+  libassPlaybackFrame = requestAnimationFrame(syncFrame);
+}
+
+function handleLibassError() {
+  stopLibassPlaybackSync();
+  if (!burnedPreviewActive) {
+    previewSubtitle.hidden = false;
+    renderPreviewText();
   }
 }
 
@@ -917,11 +980,9 @@ async function generateSubtitles() {
       generated: true});
     renderPreviewText();
     // Update libass-wasm saat transkripsi selesai
-    if (isLibassReady()) {
-      renderAssForLibass(words).catch((err) =>
-        console.warn("[main] Gagal render ASS ke libass:", err),
-      );
-    }
+    renderAssForLibass(words).catch((err) =>
+      console.warn("[main] Gagal render ASS ke libass:", err),
+    );
     renderWordEditor();
     updatePreviewTag();
     updateAvailability();
@@ -1574,6 +1635,7 @@ for (const mediaElement of [video, audio]) {
   mediaElement.addEventListener("loadedmetadata", () => {
     if (mediaElement.tagName === "VIDEO") {
       updateStageAspectRatio(mediaElement);
+      resizeLibassPreviewCanvas();
     }
     updateMediaDuration(mediaElement);
   });
@@ -1582,16 +1644,42 @@ for (const mediaElement of [video, audio]) {
   mediaElement.addEventListener("play", () => {
     state.update({ isPlaying: true });
     updatePlayButton(true);
+    syncLibassPlaybackState(mediaElement);
   });
   mediaElement.addEventListener("pause", () => {
     if (rowPlayback?.media === mediaElement) stopRowPlayback();
     state.update({ isPlaying: false });
     updatePlayButton(false);
+    if (mediaElement === currentMediaElement()) {
+      stopLibassPlaybackSync();
+      if (isLibassReady()) {
+        setIsPaused(true, mediaElement.currentTime);
+        syncLibassCurrentTime(mediaElement);
+      }
+    }
+  });
+  mediaElement.addEventListener("seeking", () => {
+    syncLibassCurrentTime(mediaElement);
+  });
+  mediaElement.addEventListener("seeked", () => {
+    syncLibassCurrentTime(mediaElement);
+  });
+  mediaElement.addEventListener("ratechange", () => {
+    if (mediaElement !== currentMediaElement() || !isLibassReady()) return;
+    setRate(mediaElement.playbackRate);
+    syncLibassCurrentTime(mediaElement);
   });
   mediaElement.addEventListener("ended", () => {
     if (rowPlayback?.media === mediaElement) stopRowPlayback();
     state.update({ isPlaying: false });
     updatePlayButton(false);
+    if (mediaElement === currentMediaElement()) {
+      stopLibassPlaybackSync();
+      if (isLibassReady()) {
+        setIsPaused(true, mediaElement.currentTime);
+        syncLibassCurrentTime(mediaElement);
+      }
+    }
   });
   mediaElement.addEventListener("error", () => {
     if (mediaElement === video && burnedPreviewActive) {
@@ -1641,6 +1729,7 @@ previewStage.addEventListener("pointermove", moveCaptionDrag);
 previewStage.addEventListener("pointerup", endCaptionDrag);
 previewStage.addEventListener("pointercancel", endCaptionDrag);
 previewStage.addEventListener("lostpointercapture", endCaptionDrag);
+previewCanvas.addEventListener("libass-error", handleLibassError);
 
 for (const control of document.querySelectorAll(
   'input[name="words-per-line"], #highlight-toggle, #font-select, #font-size, #text-color, #highlight-color, #position-select, #outline-size, #shadow-size',
@@ -1682,7 +1771,12 @@ loadPresets();
 
 // Inisialisasi libass-wasm untuk preview (fallback ke CSS jika gagal)
 initLibassPreview()
-  .then(() => console.log('[main] libass-wasm siap untuk preview'))
+  .then(() => {
+    console.log('[main] libass-wasm siap untuk preview');
+    resizeLibassPreviewCanvas();
+    const mediaElement = currentMediaElement();
+    if (mediaElement) syncLibassPlaybackState(mediaElement);
+  })
   .catch((err) => console.warn('[main] libass-wasm gagal, fallback ke CSS:', err));
 
 
