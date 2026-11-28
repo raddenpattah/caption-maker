@@ -72,7 +72,7 @@ Data berikut disalin dari berkas JSON di `caption-core/presets/` dan diurutkan b
 - **Font**: Poppins ExtraBold; file `Poppins-ExtraBold.ttf`; size 88; bold `false`; italic `false`; uppercase `true`; letter_spacing 0
 - **Colors**: text `#FFFFFF`; highlight `#FFE14D`; outline `#8B0A3C`; shadow `#000000A0`
 - **Outline**: 18; **Shadow**: 6; **Blur**: 0
-- **Box**: color `#8B0A3C`; padding 22
+- **Box**: color `#8B0A3C`; horizontal padding 22; vertical padding 8
 - **Glow**: `null`
 - **Emphasis**: `none`; emphasis_scale `null`
 - **Animation**: `pop`

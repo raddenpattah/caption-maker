@@ -20,7 +20,7 @@
   "outline": 18,
   "shadow": 6,
   "blur": 0,
-  "box": { "color": "#8B0A3C", "padding": 22 },
+  "box": { "color": "#8B0A3C", "padding": 22, "padding_vertical": 8 },
   "glow": null,
   "emphasis": "none",
   "emphasis_scale": null,

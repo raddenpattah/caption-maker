@@ -33,6 +33,8 @@ pub struct PresetColors {
 pub struct PresetBox {
     pub color: String,
     pub padding: u32,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub padding_vertical: Option<u32>,
 }
 
 /// Glow opsional (event layer tambahan dengan outline berwarna).
@@ -201,6 +203,12 @@ pub fn validate_preset(p: &StylePreset) -> Result<(), String> {
         validate_color("box.color", &b.color, &p.id)?;
         if b.padding > 200 {
             return Err(format!("field 'box.padding' pada preset '{}' > 200", p.id));
+        }
+        if b.padding_vertical.is_some_and(|padding| padding > 200) {
+            return Err(format!(
+                "field 'box.padding_vertical' pada preset '{}' > 200",
+                p.id
+            ));
         }
     }
     if let Some(g) = &p.glow {

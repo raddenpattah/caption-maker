@@ -230,7 +230,7 @@ const metricPreset = {
   font: { size: 72, letter_spacing: 2 },
   outline: 6,
   shadow: 3,
-  box: { padding: 18 },
+  box: { padding: 18, padding_vertical: 8 },
   margin_v: 450,
   margin_lr: 80,
   glow: { radius: 12 },
@@ -251,6 +251,7 @@ test("menghitung preview metrics pada geometri 1080x1920", () => {
   assert.equal(metrics.shadow, 1.5);
   assert.equal(metrics.letterSpacing, 1);
   assert.equal(metrics.boxPadding, 9);
+  assert.equal(metrics.boxPaddingVertical, 4);
   assert.equal(metrics.marginLr, 40);
   assert.equal(metrics.marginV, 225);
   assert.equal(metrics.glowRadius, 6);

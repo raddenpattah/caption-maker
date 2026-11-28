@@ -248,6 +248,25 @@ fn box_preset_sets_border_style_3() {
 }
 
 #[test]
+fn kata_kotak_merah_uses_independent_vertical_box_padding() {
+    let preset = find_preset("kata-kotak-merah").unwrap();
+    let ass = render_ass_with_preset(&words_3(), &preset, portrait(), &PresetOptions::default());
+    let style = ass
+        .lines()
+        .find(|line| line.starts_with("Style: Default,"))
+        .unwrap();
+    let fields: Vec<_> = style.splitn(23, ',').collect();
+
+    assert_eq!(fields[16], "22", "padding horizontal dipertahankan");
+    for event in dialogue_lines(&ass) {
+        assert!(
+            event.contains(r"{\ybord8}"),
+            "setiap event harus memakai padding vertikal 8: {event}"
+        );
+    }
+}
+
+#[test]
 fn no_box_preset_sets_border_style_1() {
     let p = find_preset("kata-tebal-putih").unwrap();
     let ass = render_ass_with_preset(&words_3(), &p, portrait(), &PresetOptions::default());

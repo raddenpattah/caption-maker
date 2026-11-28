@@ -224,6 +224,7 @@ export function computePreviewMetrics({ rect, videoWidth, videoHeight, preset, s
     shadow,
     letterSpacing: Number(preset.font?.letter_spacing ?? 0) * previewScale,
     boxPadding: Number(preset.box?.padding ?? 0) * previewScale,
+    boxPaddingVertical: Number(preset.box?.padding_vertical ?? preset.box?.padding ?? 0) * previewScale,
     marginLr: Number(preset.margin_lr ?? 0) * previewScale,
     marginV:
       vh > vw
@@ -382,7 +383,7 @@ export function renderPreview(container, words, currentMs, settings) {
 
   if (hasBox) {
     content.style.backgroundColor = preset.box.color;
-    content.style.padding = `${metrics.boxPadding}px`;
+    content.style.padding = `${metrics.boxPaddingVertical}px ${metrics.boxPadding}px`;
     content.style.borderRadius = "0";
   }
 

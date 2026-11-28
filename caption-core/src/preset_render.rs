@@ -200,6 +200,23 @@ fn build_style_line(preset: &StylePreset, geom: &VideoGeometry) -> String {
     )
 }
 
+fn box_vertical_padding_override(preset: &StylePreset, geom: &VideoGeometry) -> String {
+    preset
+        .box_
+        .as_ref()
+        .and_then(|box_| box_.padding_vertical)
+        .map(|padding| {
+            let scaled_padding = (f64::from(padding) * geom.scale()).round() as u32;
+            format!("{{\\ybord{scaled_padding}}}")
+        })
+        .unwrap_or_default()
+}
+
+struct AssEventOverrides<'a> {
+    position: &'a str,
+    box_vertical_padding: &'a str,
+}
+
 /// Render ASS lengkap berdasarkan preset.
 pub fn render_ass_with_preset(
     groups: &[Group],
@@ -245,6 +262,11 @@ pub fn render_ass_with_preset(
         .caption_position
         .map(|position| position.ass_override(&geometry))
         .unwrap_or_default();
+    let box_vertical_padding = box_vertical_padding_override(preset, &geometry);
+    let event_overrides = AssEventOverrides {
+        position: &position_override,
+        box_vertical_padding: &box_vertical_padding,
+    };
 
     for group in &regrouped {
         if group.words.is_empty() {
@@ -253,7 +275,7 @@ pub fn render_ass_with_preset(
         match preset.emphasis {
             Emphasis::None | Emphasis::Fill => {
                 if glow_layer {
-                    render_glow_events(&mut out, preset, group, &geometry, &position_override);
+                    render_glow_events(&mut out, preset, group, &geometry, &event_overrides);
                 }
                 let text = match preset.emphasis {
                     Emphasis::Fill => build_fill_text(preset, group, &geometry),
@@ -261,11 +283,12 @@ pub fn render_ass_with_preset(
                 };
                 let pop = pop_tags(preset, group, group.start_ms(), group.end_ms());
                 out.push_str(&format!(
-                    "Dialogue: 1,{},{},Default,,0,0,0,,{}{}{}\n",
+                    "Dialogue: 1,{},{},Default,,0,0,0,,{}{}{}{}\n",
                     timestamp(group.start_ms()),
                     timestamp(group.end_ms()),
                     pop,
                     position_override,
+                    box_vertical_padding,
                     text
                 ));
             }
@@ -285,17 +308,18 @@ pub fn render_ass_with_preset(
                             start,
                             end,
                             &geometry,
-                            &position_override,
+                            &event_overrides,
                         );
                     }
                     let pop = pop_tags(preset, group, start, end);
                     let text = build_group_text(preset, group, Some(i));
                     out.push_str(&format!(
-                        "Dialogue: 1,{},{},Default,,0,0,0,,{}{}{}\n",
+                        "Dialogue: 1,{},{},Default,,0,0,0,,{}{}{}{}\n",
                         timestamp(start),
                         timestamp(end),
                         pop,
                         position_override,
+                        box_vertical_padding,
                         text
                     ));
                 }
@@ -337,7 +361,7 @@ fn render_glow_events(
     preset: &StylePreset,
     group: &Group,
     geometry: &VideoGeometry,
-    position_override: &str,
+    overrides: &AssEventOverrides<'_>,
 ) {
     let g = preset.glow.as_ref().unwrap();
     let c = ass_color_from_hex(&g.color).unwrap_or("&H00000000&".into());
@@ -345,10 +369,12 @@ fn render_glow_events(
     let text = build_group_text(preset, group, None);
     let pop = pop_tags(preset, group, group.start_ms(), group.end_ms());
     out.push_str(&format!(
-        "Dialogue: 0,{},{},Default,,0,0,0,,{}{position_override}{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
+        "Dialogue: 0,{},{},Default,,0,0,0,,{}{}{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{}{text}\n",
         timestamp(group.start_ms()),
         timestamp(group.end_ms()),
         pop,
+        overrides.position,
+        overrides.box_vertical_padding,
     ));
 }
 
@@ -359,7 +385,7 @@ fn render_glow_single(
     start: u32,
     end: u32,
     geometry: &VideoGeometry,
-    position_override: &str,
+    overrides: &AssEventOverrides<'_>,
 ) {
     let g = preset.glow.as_ref().unwrap();
     let c = ass_color_from_hex(&g.color).unwrap_or("&H00000000&".into());
@@ -367,9 +393,11 @@ fn render_glow_single(
     let text = build_group_text(preset, group, None);
     let pop = pop_tags(preset, group, start, end);
     out.push_str(&format!(
-        "Dialogue: 0,{},{},Default,,0,0,0,,{}{position_override}{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{text}\n",
+        "Dialogue: 0,{},{},Default,,0,0,0,,{}{}{{\\bord{r}\\blur{r}\\c{c}\\3c{c}}}{}{text}\n",
         timestamp(start),
         timestamp(end),
         pop,
+        overrides.position,
+        overrides.box_vertical_padding,
     ));
 }

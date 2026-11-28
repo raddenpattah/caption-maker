@@ -73,7 +73,7 @@ async function renderAssForLibass(words) {
         caption_position: null,
       },
     });
-    if (result?.ass) {
+    if (result?.ass && selectedPreset()?.id === preset.id) {
       setAssContent(result.ass);
     }
   } catch (err) {
@@ -207,6 +207,12 @@ function selectPreset(id) {
   });
   syncWordsPerLineControl();
   renderPreviewText();
+  const words = state.get().words;
+  if (words.length > 0) {
+    renderAssForLibass(words).catch((err) =>
+      console.warn("[main] Gagal memperbarui ASS setelah memilih preset:", err),
+    );
+  }
 }
 
 function renderPresetGallery(presets) {
